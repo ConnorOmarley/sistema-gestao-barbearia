@@ -724,8 +724,7 @@
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             
-            // Find tab button by onclick attribute matching tabName
-            const tabBtn = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('onclick').includes(tabName));
+            const tabBtn = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes(`'${tabName}'`));
             if (tabBtn) tabBtn.classList.add('active');
             
             const section = document.getElementById(tabName);
