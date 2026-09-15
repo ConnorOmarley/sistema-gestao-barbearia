@@ -720,12 +720,20 @@
     <script>
         const API_URL = 'http://localhost:3000/api';
 
-        function showTab(tabName) {
+        function showTab(tabName, save = true) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             
-            event.currentTarget.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
+            // Find tab button by onclick attribute matching tabName
+            const tabBtn = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('onclick').includes(tabName));
+            if (tabBtn) tabBtn.classList.add('active');
+            
+            const section = document.getElementById(tabName);
+            if (section) section.classList.add('active');
+
+            if (save) {
+                localStorage.setItem('activeTab', tabName);
+            }
 
             if (tabName === 'barbeiros') loadBarbeiros();
             if (tabName === 'servicos') loadServicos();
@@ -735,6 +743,7 @@
                 loadBarbeirosSelect();
                 loadServicosSelect();
             }
+        }
         }
 
         function showAlert(containerId, message, type = 'success') {
@@ -1158,8 +1167,8 @@
             loadServicos();
         });
 
-        loadBarbeirosSelect();
-        loadServicosSelect();
+        const savedTab = localStorage.getItem('activeTab') || 'atendimento';
+        showTab(savedTab, false);
     </script>
 </body>
 </html>
