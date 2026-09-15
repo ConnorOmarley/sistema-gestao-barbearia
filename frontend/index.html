@@ -1018,15 +1018,20 @@
             const nome = document.getElementById('barb-nome').value;
             const comissao = document.getElementById('barb-comissao').value;
             
-            await fetch(`${API_URL}/barbeiros`, {
+            const res = await fetch(`${API_URL}/barbeiros`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, comissao_percentual: parseFloat(comissao) })
             });
             
-            showAlert('barbeiro-alert', 'Barbeiro adicionado com sucesso!');
-            e.target.reset();
-            loadBarbeiros();
+            if (res.ok) {
+                showAlert('barbeiro-alert', 'Barbeiro adicionado com sucesso!');
+                e.target.reset();
+                loadBarbeiros();
+            } else {
+                const data = await res.json();
+                showAlert('barbeiro-alert', data.error || 'Erro ao adicionar barbeiro', 'error');
+            }
         });
 
         document.getElementById('form-servico').addEventListener('submit', async (e) => {
@@ -1035,15 +1040,20 @@
             const valor = document.getElementById('serv-valor').value;
             const apenas_dono = document.getElementById('serv-apenas-dono').checked;
             
-            await fetch(`${API_URL}/servicos`, {
+            const res = await fetch(`${API_URL}/servicos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono })
             });
             
-            showAlert('servico-alert', 'Serviço adicionado com sucesso!');
-            e.target.reset();
-            loadServicos();
+            if (res.ok) {
+                showAlert('servico-alert', 'Serviço adicionado com sucesso!');
+                e.target.reset();
+                loadServicos();
+            } else {
+                const data = await res.json();
+                showAlert('servico-alert', data.error || 'Erro ao adicionar serviço', 'error');
+            }
         });
 
         document.getElementById('form-atendimento').addEventListener('submit', async (e) => {
