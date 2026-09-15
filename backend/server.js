@@ -74,10 +74,10 @@ app.post('/api/servicos', (req, res) => {
 });
 
 app.put('/api/servicos/:id', (req, res) => {
-  const { nome, valor } = req.body;
-  db.run('UPDATE servicos SET nome = ?, valor = ? WHERE id = ?', [nome, valor, req.params.id]);
+  const { nome, valor, apenas_dono } = req.body;
+  db.run('UPDATE servicos SET nome = ?, valor = ?, apenas_dono = ? WHERE id = ?', [nome, valor, apenas_dono, req.params.id]);
   saveDatabase();
-  res.json({ id: req.params.id, nome, valor });
+  res.json({ id: req.params.id, nome, valor, apenas_dono });
 });
 
 app.delete('/api/servicos/:id', (req, res) => {
@@ -159,33 +159,70 @@ app.get('/api/relatorio/comissoes', (req, res) => {
     SELECT 
       b.id,
       b.nome,
+      b.is_dono,
       COUNT(a.id) as total_atendimentos,
       SUM(a.valor_cobrado) as total_faturado,
-      SUM(a.valor_comissao) as total_comissao
+      SUM(a.valor_tinta) as total_tinta,
+      SUM(a.valor_comissao) as total_comissao_colaborador,
+      SUM(a.valor_cobrado - a.valor_comissao) as total_barbearia
     FROM barbeiros b
     LEFT JOIN atendimentos a ON b.id = a.barbeiro_id
   `;
   
   const params = [];
+  const conditions = ['b.ativo = 1'];
   
-  if (data_inicio || data_fim) {
-    query += ' WHERE 1=1';
-    
-    if (data_inicio) {
-      query += ' AND a.data_hora >= ?';
-      params.push(data_inicio);
-    }
-    
-    if (data_fim) {
-      query += ' AND a.data_hora <= ?';
-      params.push(data_fim);
-    }
+  if (data_inicio) {
+    conditions.push('(a.data_hora >= ? OR a.data_hora IS NULL)');
+    params.push(data_inicio);
   }
   
-  query += ' GROUP BY b.id, b.nome ORDER BY b.nome';
+  if (data_fim) {
+    conditions.push('(a.data_hora <= ? OR a.data_hora IS NULL)');
+    params.push(data_fim);
+  }
+  
+  query += ' WHERE ' + conditions.join(' AND ');
+  query += ' GROUP BY b.id, b.nome, b.is_dono ORDER BY b.nome';
   
   const relatorio = getAll(query, params);
   res.json(relatorio);
+});
+
+app.get('/api/relatorio/geral', (req, res) => {
+  const { data_inicio, data_fim } = req.query;
+  
+  let query = `
+    SELECT 
+      SUM(valor_cobrado) as total_geral,
+      SUM(valor_tinta) as total_tinta,
+      SUM(valor_comissao) as total_colaboradores,
+      SUM(valor_cobrado - valor_comissao) as total_barbearia,
+      COUNT(id) as total_atendimentos
+    FROM atendimentos
+    WHERE 1=1
+  `;
+  
+  const params = [];
+  
+  if (data_inicio) {
+    query += ' AND data_hora >= ?';
+    params.push(data_inicio);
+  }
+  
+  if (data_fim) {
+    query += ' AND data_hora <= ?';
+    params.push(data_fim);
+  }
+  
+  const resultado = getOne(query, params);
+  res.json(resultado || {
+    total_geral: 0,
+    total_tinta: 0,
+    total_colaboradores: 0,
+    total_barbearia: 0,
+    total_atendimentos: 0
+  });
 });
 
 app.listen(PORT, () => {

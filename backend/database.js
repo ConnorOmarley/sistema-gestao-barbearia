@@ -39,6 +39,8 @@ db.run(`
     barbeiro_id INTEGER NOT NULL,
     servico_id INTEGER NOT NULL,
     valor_cobrado REAL NOT NULL,
+    valor_tinta REAL DEFAULT 0,
+    tem_pigmentacao INTEGER DEFAULT 0,
     comissao_percentual REAL NOT NULL,
     valor_comissao REAL NOT NULL,
     data_hora TEXT NOT NULL,
@@ -53,12 +55,14 @@ db.run(`
 
 const donoExists = db.exec('SELECT 1 FROM barbeiros WHERE is_dono = 1');
 if (donoExists.length === 0) {
-  db.run(`INSERT INTO barbeiros (nome, comissao_percentual, is_dono, ativo) VALUES ('Dono', 100, 1, 1)`);
+  db.run(`INSERT INTO barbeiros (nome, comissao_percentual, is_dono, ativo) VALUES ('Michael Barber', 50, 1, 1)`);
 }
 
-const servicoExists = db.exec('SELECT 1 FROM servicos WHERE apenas_dono = 1');
+const servicoExists = db.exec('SELECT 1 FROM servicos');
 if (servicoExists.length === 0) {
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Pintar Cabelo', 80.00, 1, 1)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Corte Simples', 30.00, 0, 1)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Barba', 20.00, 0, 1)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Corte + Barba', 45.00, 0, 1)`);
 }
 
 function saveDatabase() {
