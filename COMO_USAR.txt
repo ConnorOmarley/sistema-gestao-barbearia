@@ -1,0 +1,29 @@
+========================================================================
+       BARBEARIA MICHAEL BARBER - SISTEMA DE GESTÃO & CAIXA LOCAL
+========================================================================
+
+Este sistema foi projetado para funcionar 100% OFFLINE (sem internet),
+diretamente no notebook, sem mensalidades ou assinaturas recorrentes.
+
+------------------------------------------------------------------------
+COMO USAR O SISTEMA NO DIA A DIA:
+------------------------------------------------------------------------
+1. Dê 2 cliques no arquivo: "iniciar_sistema.bat"
+2. O sistema abrirá automaticamente a tela do Caixa no seu navegador.
+3. Pronto! Você já pode:
+   - Registrar atendimentos e serviços;
+   - Acompanhar comissões dos barbeiros e lucros da barbearia;
+   - Visualizar relatórios e históricos completos.
+
+------------------------------------------------------------------------
+ONDE FICAM OS DADOS:
+------------------------------------------------------------------------
+- Todos os atendimentos, barbeiros e serviços ficam salvos no arquivo:
+  backend/barbearia.db
+- Você pode fazer cópias de segurança (backup) dessa pasta quando desejar.
+
+------------------------------------------------------------------------
+REQUISITO:
+------------------------------------------------------------------------
+- Node.js instalado no notebook.
+========================================================================
