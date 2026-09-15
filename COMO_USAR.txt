@@ -1,29 +1,33 @@
 ========================================================================
-       BARBEARIA MICHAEL BARBER - SISTEMA DE GESTÃO & CAIXA LOCAL
+       BARBEARIA MICHAEL BARBER - SISTEMA DE GESTÃO & CAIXA PORTÁTIL
 ========================================================================
 
 Este sistema foi projetado para funcionar 100% OFFLINE (sem internet),
-diretamente no notebook, sem mensalidades ou assinaturas recorrentes.
+diretamente no notebook ou em um PEN DRIVE portátil, sem mensalidades
+ou assinaturas recorrentes.
 
 ------------------------------------------------------------------------
-COMO USAR O SISTEMA NO DIA A DIA:
+USO DIRETO NO PEN DRIVE (PORTÁTIL / PLUG-AND-PLAY):
 ------------------------------------------------------------------------
-1. Dê 2 cliques no arquivo: "iniciar_sistema.bat"
-2. O sistema abrirá automaticamente a tela do Caixa no seu navegador.
-3. Pronto! Você já pode:
-   - Registrar atendimentos e serviços;
-   - Acompanhar comissões dos barbeiros e lucros da barbearia;
-   - Visualizar relatórios e históricos completos.
+1. Copie a pasta inteira do sistema para o seu Pen Drive.
+2. Conecte o Pen Drive em qualquer computador ou notebook com Windows.
+3. Dê 2 cliques no arquivo: "iniciar_sistema.bat"
+4. O sistema abrirá automaticamente a tela do Caixa no navegador.
+
+* Graças ao executável em "bin/node.exe", o sistema funciona em qualquer
+  computador com Windows, mesmo que nunca tenha instalado o Node.js antes!
 
 ------------------------------------------------------------------------
 ONDE FICAM OS DADOS:
 ------------------------------------------------------------------------
 - Todos os atendimentos, barbeiros e serviços ficam salvos no arquivo:
   backend/barbearia.db
-- Você pode fazer cópias de segurança (backup) dessa pasta quando desejar.
+- Quando você usa o sistema pelo Pen Drive, todas as vendas são salvas
+  automaticamente dentro do próprio Pen Drive.
 
 ------------------------------------------------------------------------
-REQUISITO:
+BACKUP (CÓPIA DE SEGURANÇA):
 ------------------------------------------------------------------------
-- Node.js instalado no notebook.
+- Para fazer um backup, basta copiar a pasta inteira ou o arquivo
+  "backend/barbearia.db" para onde desejar (ex: seu e-mail, HD externo).
 ========================================================================

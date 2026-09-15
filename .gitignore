@@ -1,0 +1,6 @@
+# Executável portátil para pen drive (gerado localmente)
+bin/
+node_modules/
+*.db
+*.log
+.DS_Store
