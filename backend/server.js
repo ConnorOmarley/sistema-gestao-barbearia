@@ -162,6 +162,21 @@ app.get('/api/atendimentos', (req, res) => {
   res.json(atendimentos);
 });
 
+app.delete('/api/atendimentos', (req, res) => {
+  db.run('DELETE FROM atendimentos');
+  try {
+    db.run("DELETE FROM sqlite_sequence WHERE name = 'atendimentos'");
+  } catch (e) {}
+  saveDatabase();
+  res.json({ success: true, message: 'Todos os atendimentos foram limpos' });
+});
+
+app.delete('/api/atendimentos/:id', (req, res) => {
+  db.run('DELETE FROM atendimentos WHERE id = ?', [req.params.id]);
+  saveDatabase();
+  res.json({ success: true });
+});
+
 app.get('/api/relatorio/comissoes', (req, res) => {
   const { data_inicio, data_fim } = req.query;
   
