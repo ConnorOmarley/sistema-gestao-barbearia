@@ -239,11 +239,11 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('atendimento')">Novo Atendimento</button>
+            <button class="tab active" onclick="showTab('atendimento')">Caixa</button>
+            <button class="tab" onclick="showTab('relatorio')">Relatórios</button>
+            <button class="tab" onclick="showTab('historico')">Histórico</button>
             <button class="tab" onclick="showTab('barbeiros')">Barbeiros</button>
             <button class="tab" onclick="showTab('servicos')">Serviços</button>
-            <button class="tab" onclick="showTab('historico')">Histórico</button>
-            <button class="tab" onclick="showTab('relatorio')">Relatório Comissões</button>
         </div>
 
         <div class="content">
@@ -262,6 +262,15 @@
                     <div class="form-group">
                         <label for="atend-valor">Valor Cobrado (R$):</label>
                         <input type="number" id="atend-valor" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="atend-pigmentacao"> Tem Pigmentação/Tinta?
+                        </label>
+                    </div>
+                    <div class="form-group" id="div-valor-tinta" style="display: none;">
+                        <label for="atend-valor-tinta">Valor da Tinta (R$):</label>
+                        <input type="number" id="atend-valor-tinta" step="0.01" value="0">
                     </div>
                     <div class="form-group">
                         <label for="atend-obs">Observação (opcional):</label>
@@ -299,6 +308,27 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+                
+                <div id="modal-editar-barbeiro" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:10px; min-width:400px;">
+                        <h3>Editar Barbeiro</h3>
+                        <form id="form-editar-barbeiro">
+                            <input type="hidden" id="edit-barb-id">
+                            <div class="form-group">
+                                <label for="edit-barb-nome">Nome:</label>
+                                <input type="text" id="edit-barb-nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-barb-comissao">Comissão (%):</label>
+                                <input type="number" id="edit-barb-comissao" step="0.01" min="0" max="100" required>
+                            </div>
+                            <div style="display:flex; gap:10px;">
+                                <button type="submit" class="btn btn-success">Salvar</button>
+                                <button type="button" class="btn btn-danger" onclick="closeEditModal()">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
 
             <div id="servicos" class="section">
@@ -353,9 +383,10 @@
                             <th>Data/Hora</th>
                             <th>Barbeiro</th>
                             <th>Serviço</th>
-                            <th>Valor</th>
-                            <th>Comissão %</th>
-                            <th>Valor Comissão</th>
+                            <th>Valor Total</th>
+                            <th>Tinta</th>
+                            <th>Colaborador (50%)</th>
+                            <th>Barbearia (50%)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -363,7 +394,7 @@
             </div>
 
             <div id="relatorio" class="section">
-                <h2>Relatório de Comissões</h2>
+                <h2>Relatórios Financeiros</h2>
                 <div class="filters">
                     <div class="form-group">
                         <label for="rel-data-inicio">Data Início:</label>
@@ -374,11 +405,25 @@
                         <input type="date" id="rel-data-fim">
                     </div>
                     <div class="form-group">
+                        <label for="rel-periodo">Período:</label>
+                        <select id="rel-periodo" onchange="setPeriodo()">
+                            <option value="">Personalizado</option>
+                            <option value="hoje">Hoje</option>
+                            <option value="semana">Esta Semana</option>
+                            <option value="mes">Este Mês</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>&nbsp;</label>
                         <button class="btn btn-primary" onclick="loadRelatorio()">Gerar Relatório</button>
                     </div>
                 </div>
-                <div class="stats" id="stats-container"></div>
+                
+                <h3>Resumo Geral</h3>
+                <div class="stats" id="stats-geral"></div>
+                
+                <h3>Por Colaborador</h3>
+                <div class="stats" id="stats-colaboradores"></div>
             </div>
         </div>
     </div>
@@ -419,7 +464,10 @@
                     <td>${b.comissao_percentual}%</td>
                     <td>${b.is_dono ? 'Dono' : 'Barbeiro'}</td>
                     <td>
-                        ${!b.is_dono ? `<button class="btn btn-danger btn-small" onclick="deleteBarbeiro(${b.id})">Remover</button>` : ''}
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-small" onclick="editBarbeiro(${b.id}, '${b.nome}', ${b.comissao_percentual})">Editar</button>
+                            ${!b.is_dono ? `<button class="btn btn-danger btn-small" onclick="deleteBarbeiro(${b.id})">Remover</button>` : ''}
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -475,35 +523,98 @@
             const res = await fetch(url);
             const atendimentos = await res.json();
             const tbody = document.querySelector('#table-historico tbody');
-            tbody.innerHTML = atendimentos.map(a => `
+            tbody.innerHTML = atendimentos.map(a => {
+                const valorBarbearia = a.valor_cobrado - a.valor_comissao;
+                return `
                 <tr>
                     <td>${new Date(a.data_hora).toLocaleString('pt-BR')}</td>
                     <td>${a.barbeiro_nome}</td>
-                    <td>${a.servico_nome}</td>
+                    <td>${a.servico_nome}${a.tem_pigmentacao ? ' 🎨' : ''}</td>
                     <td>R$ ${a.valor_cobrado.toFixed(2)}</td>
-                    <td>${a.comissao_percentual}%</td>
+                    <td>R$ ${(a.valor_tinta || 0).toFixed(2)}</td>
                     <td>R$ ${a.valor_comissao.toFixed(2)}</td>
+                    <td>R$ ${valorBarbearia.toFixed(2)}</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
+        }
+
+        function setPeriodo() {
+            const periodo = document.getElementById('rel-periodo').value;
+            const hoje = new Date();
+            let inicio, fim;
+            
+            if (periodo === 'hoje') {
+                inicio = fim = hoje.toISOString().split('T')[0];
+            } else if (periodo === 'semana') {
+                const primeiroDia = new Date(hoje);
+                primeiroDia.setDate(hoje.getDate() - hoje.getDay());
+                inicio = primeiroDia.toISOString().split('T')[0];
+                fim = hoje.toISOString().split('T')[0];
+            } else if (periodo === 'mes') {
+                inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
+                fim = hoje.toISOString().split('T')[0];
+            }
+            
+            if (inicio && fim) {
+                document.getElementById('rel-data-inicio').value = inicio;
+                document.getElementById('rel-data-fim').value = fim;
+            }
         }
 
         async function loadRelatorio() {
             const dataInicio = document.getElementById('rel-data-inicio').value;
             const dataFim = document.getElementById('rel-data-fim').value;
             
-            let url = `${API_URL}/relatorio/comissoes?`;
-            if (dataInicio) url += `data_inicio=${dataInicio}T00:00:00Z&`;
-            if (dataFim) url += `data_fim=${dataFim}T23:59:59Z`;
+            let urlComissoes = `${API_URL}/relatorio/comissoes?`;
+            let urlGeral = `${API_URL}/relatorio/geral?`;
+            if (dataInicio) {
+                urlComissoes += `data_inicio=${dataInicio}T00:00:00Z&`;
+                urlGeral += `data_inicio=${dataInicio}T00:00:00Z&`;
+            }
+            if (dataFim) {
+                urlComissoes += `data_fim=${dataFim}T23:59:59Z`;
+                urlGeral += `data_fim=${dataFim}T23:59:59Z`;
+            }
             
-            const res = await fetch(url);
-            const relatorio = await res.json();
-            const container = document.getElementById('stats-container');
-            container.innerHTML = relatorio.map(r => `
+            const [resComissoes, resGeral] = await Promise.all([
+                fetch(urlComissoes),
+                fetch(urlGeral)
+            ]);
+            
+            const relatorio = await resComissoes.json();
+            const geral = await resGeral.json();
+            
+            const containerGeral = document.getElementById('stats-geral');
+            containerGeral.innerHTML = `
                 <div class="stat-card">
-                    <h3>R$ ${(r.total_comissao || 0).toFixed(2)}</h3>
+                    <h3>R$ ${(geral.total_geral || 0).toFixed(2)}</h3>
+                    <p><strong>Faturamento Total</strong></p>
+                    <p>${geral.total_atendimentos || 0} atendimentos</p>
+                </div>
+                <div class="stat-card">
+                    <h3>R$ ${(geral.total_colaboradores || 0).toFixed(2)}</h3>
+                    <p><strong>Total Colaboradores (50%)</strong></p>
+                </div>
+                <div class="stat-card">
+                    <h3>R$ ${(geral.total_barbearia || 0).toFixed(2)}</h3>
+                    <p><strong>Total Barbearia (50%)</strong></p>
+                </div>
+                <div class="stat-card">
+                    <h3>R$ ${(geral.total_tinta || 0).toFixed(2)}</h3>
+                    <p><strong>Receita Tinta</strong></p>
+                    <p>100% Barbearia</p>
+                </div>
+            `;
+            
+            const containerColaboradores = document.getElementById('stats-colaboradores');
+            containerColaboradores.innerHTML = relatorio.map(r => `
+                <div class="stat-card">
+                    <h3>R$ ${(r.total_comissao_colaborador || 0).toFixed(2)}</h3>
                     <p><strong>${r.nome}</strong></p>
                     <p>${r.total_atendimentos || 0} atendimentos</p>
                     <p>Faturado: R$ ${(r.total_faturado || 0).toFixed(2)}</p>
+                    <p>Tinta: R$ ${(r.total_tinta || 0).toFixed(2)}</p>
                 </div>
             `).join('');
         }
@@ -540,11 +651,21 @@
             loadServicos();
         });
 
+        document.getElementById('atend-pigmentacao').addEventListener('change', (e) => {
+            const divValorTinta = document.getElementById('div-valor-tinta');
+            divValorTinta.style.display = e.target.checked ? 'block' : 'none';
+            if (!e.target.checked) {
+                document.getElementById('atend-valor-tinta').value = '0';
+            }
+        });
+
         document.getElementById('form-atendimento').addEventListener('submit', async (e) => {
             e.preventDefault();
             const barbeiro_id = document.getElementById('atend-barbeiro').value;
             const servico_id = document.getElementById('atend-servico').value;
             const valor_cobrado = document.getElementById('atend-valor').value;
+            const tem_pigmentacao = document.getElementById('atend-pigmentacao').checked;
+            const valor_tinta = tem_pigmentacao ? document.getElementById('atend-valor-tinta').value : 0;
             const observacao = document.getElementById('atend-obs').value;
             
             const res = await fetch(`${API_URL}/atendimentos`, {
@@ -554,6 +675,8 @@
                     barbeiro_id: parseInt(barbeiro_id),
                     servico_id: parseInt(servico_id),
                     valor_cobrado: parseFloat(valor_cobrado),
+                    valor_tinta: parseFloat(valor_tinta),
+                    tem_pigmentacao: tem_pigmentacao,
                     observacao
                 })
             });
@@ -563,6 +686,7 @@
             if (res.ok) {
                 showAlert('atendimento-alert', 'Atendimento registrado com sucesso!');
                 e.target.reset();
+                document.getElementById('div-valor-tinta').style.display = 'none';
             } else {
                 showAlert('atendimento-alert', data.error || 'Erro ao registrar atendimento', 'error');
             }
@@ -581,6 +705,33 @@
                 loadServicos();
             }
         }
+
+        function editBarbeiro(id, nome, comissao) {
+            document.getElementById('edit-barb-id').value = id;
+            document.getElementById('edit-barb-nome').value = nome;
+            document.getElementById('edit-barb-comissao').value = comissao;
+            document.getElementById('modal-editar-barbeiro').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('modal-editar-barbeiro').style.display = 'none';
+        }
+
+        document.getElementById('form-editar-barbeiro').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-barb-id').value;
+            const nome = document.getElementById('edit-barb-nome').value;
+            const comissao = document.getElementById('edit-barb-comissao').value;
+            
+            await fetch(`${API_URL}/barbeiros/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, comissao_percentual: parseFloat(comissao) })
+            });
+            
+            closeEditModal();
+            loadBarbeiros();
+        });
 
         loadBarbeirosSelect();
         loadServicosSelect();

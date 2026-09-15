@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
-import db, { saveDatabase } from './database.js';
+import { join, basename } from 'path';
+import { existsSync, readdirSync } from 'fs';
+import db, { saveDatabase, backupDatabase, backupsDir } from './database.js';
 
 const app = express();
 const PORT = 3000;
@@ -87,7 +89,7 @@ app.delete('/api/servicos/:id', (req, res) => {
 });
 
 app.post('/api/atendimentos', (req, res) => {
-  const { barbeiro_id, servico_id, valor_cobrado, observacao } = req.body;
+  const { barbeiro_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, observacao } = req.body;
   
   const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ?', [barbeiro_id]);
   const servico = getOne('SELECT * FROM servicos WHERE id = ?', [servico_id]);
@@ -101,19 +103,27 @@ app.post('/api/atendimentos', (req, res) => {
   }
   
   const comissao_percentual = barbeiro.comissao_percentual;
-  const valor_comissao = (valor_cobrado * comissao_percentual) / 100;
+  
+  let valor_para_comissao = valor_cobrado;
+  if (tem_pigmentacao && valor_tinta > 0) {
+    valor_para_comissao = valor_cobrado - valor_tinta;
+  }
+  
+  const valor_comissao = (valor_para_comissao * comissao_percentual) / 100;
   const data_hora = new Date().toISOString();
   
   const id = run(`
-    INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, comissao_percentual, valor_comissao, data_hora, observacao)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [barbeiro_id, servico_id, valor_cobrado, comissao_percentual, valor_comissao, data_hora, observacao]);
+    INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [barbeiro_id, servico_id, valor_cobrado, valor_tinta || 0, tem_pigmentacao ? 1 : 0, comissao_percentual, valor_comissao, data_hora, observacao]);
   
   res.json({
     id,
     barbeiro_id,
     servico_id,
     valor_cobrado,
+    valor_tinta: valor_tinta || 0,
+    tem_pigmentacao: tem_pigmentacao ? 1 : 0,
     comissao_percentual,
     valor_comissao,
     data_hora
@@ -153,15 +163,18 @@ app.get('/api/atendimentos', (req, res) => {
 });
 
 app.get('/api/relatorio/comissoes', (req, res) => {
-  const { data_inicio, data_fim } = req.query;
+  const { data_inicio, data_fim, periodo } = req.query;
   
   let query = `
     SELECT 
       b.id,
       b.nome,
+      b.is_dono,
       COUNT(a.id) as total_atendimentos,
       SUM(a.valor_cobrado) as total_faturado,
-      SUM(a.valor_comissao) as total_comissao
+      SUM(a.valor_tinta) as total_tinta,
+      SUM(a.valor_comissao) as total_comissao_colaborador,
+      SUM(a.valor_cobrado - a.valor_comissao) as total_barbearia
     FROM barbeiros b
     LEFT JOIN atendimentos a ON b.id = a.barbeiro_id
   `;
@@ -182,13 +195,73 @@ app.get('/api/relatorio/comissoes', (req, res) => {
     }
   }
   
-  query += ' GROUP BY b.id, b.nome ORDER BY b.nome';
+  query += ' GROUP BY b.id, b.nome, b.is_dono ORDER BY b.nome';
   
   const relatorio = getAll(query, params);
   res.json(relatorio);
 });
 
-app.listen(PORT, () => {
+app.get('/api/relatorio/geral', (req, res) => {
+  const { data_inicio, data_fim } = req.query;
+  
+  let query = `
+    SELECT 
+      SUM(valor_cobrado) as total_geral,
+      SUM(valor_tinta) as total_tinta,
+      SUM(valor_comissao) as total_colaboradores,
+      SUM(valor_cobrado - valor_comissao) as total_barbearia,
+      COUNT(id) as total_atendimentos
+    FROM atendimentos
+    WHERE 1=1
+  `;
+  
+  const params = [];
+  
+  if (data_inicio) {
+    query += ' AND data_hora >= ?';
+    params.push(data_inicio);
+  }
+  
+  if (data_fim) {
+    query += ' AND data_hora <= ?';
+    params.push(data_fim);
+  }
+  
+  const resultado = getOne(query, params);
+  res.json(resultado || {
+    total_geral: 0,
+    total_tinta: 0,
+    total_colaboradores: 0,
+    total_barbearia: 0,
+    total_atendimentos: 0
+  });
+});
+
+app.post('/api/backup', (req, res) => {
+  const backupPath = backupDatabase();
+  res.json({ success: true, arquivo: basename(backupPath) });
+});
+
+app.get('/api/backup', (req, res) => {
+  const { arquivo } = req.query;
+  if (arquivo) {
+    const backupPath = join(backupsDir, arquivo);
+    if (!backupPath.startsWith(backupsDir) || !existsSync(backupPath)) {
+      return res.status(404).json({ error: 'Backup não encontrado' });
+    }
+    return res.download(backupPath);
+  }
+  if (!existsSync(backupsDir)) {
+    return res.json([]);
+  }
+  const backups = readdirSync(backupsDir)
+    .filter(f => f.startsWith('barbearia-') && f.endsWith('.db'))
+    .sort()
+    .reverse();
+  res.json(backups);
+});
+
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
 
