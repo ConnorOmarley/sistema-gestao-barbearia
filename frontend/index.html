@@ -1,10 +1,30 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Barbearia</title>
+    <title>Barbearia Michael Barber - Sistema de Gest├úo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --bg-main: #0f1115;
+            --bg-card: #181b22;
+            --bg-card-hover: #1e222b;
+            --border-color: #2a2f3d;
+            --gold-primary: #d4af37;
+            --gold-light: #f3e5ab;
+            --gold-dark: #aa8c2c;
+            --text-main: #f1f3f9;
+            --text-muted: #94a3b8;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,211 +32,389 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
             min-height: 100vh;
-            padding: 20px;
+            padding: 30px 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(212, 175, 55, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.03) 0%, transparent 40%);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1450px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
             overflow: hidden;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
-            padding: 30px;
+            background: linear-gradient(135deg, #14171f 0%, #1e222b 100%);
+            color: var(--gold-primary);
+            padding: 40px;
             text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .header h1 i {
+            color: var(--gold-primary);
+            margin: 0 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--gold-light);
+            font-weight: 300;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
         }
 
         .tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
+            background: #13161c;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
         }
 
         .tab {
             flex: 1;
-            padding: 15px;
+            padding: 20px 15px;
             text-align: center;
             cursor: pointer;
-            background: #e9ecef;
+            background: transparent;
             border: none;
-            font-size: 16px;
+            font-size: 0.9rem;
             font-weight: 600;
-            transition: all 0.3s;
+            transition: var(--transition);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            white-space: nowrap;
+        }
+
+        .tab i {
+            font-size: 1.1rem;
+            color: var(--gold-primary);
         }
 
         .tab:hover {
-            background: #dee2e6;
+            background: rgba(212, 175, 55, 0.05);
+            color: var(--text-main);
         }
 
         .tab.active {
-            background: white;
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
+            background: var(--bg-card);
+            color: var(--gold-primary);
+            position: relative;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gold-primary);
         }
 
         .content {
-            padding: 30px;
+            padding: 40px;
         }
 
         .section {
             display: none;
+            animation: fadeIn 0.4s ease-out;
         }
 
         .section.active {
             display: block;
         }
 
-        .form-group {
+        .section h2 {
+            font-family: 'Playfair Display', serif;
+            color: #ffffff;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .section h3 {
+            font-family: 'Playfair Display', serif;
+            color: var(--text-main);
             margin-bottom: 20px;
+            margin-top: 35px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
         }
 
         input, select, textarea {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e8ed;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border 0.3s;
+            padding: 14px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            background: #13161c;
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
         input:focus, select:focus, textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--gold-primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+            background: #181b22;
         }
 
         .btn {
-            padding: 12px 30px;
+            padding: 14px 28px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+            color: #0f1115;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+            font-weight: 700;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+            filter: brightness(1.1);
         }
 
         .btn-danger {
-            background: #e74c3c;
-            color: white;
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: var(--accent-red);
+            color: #ffffff;
         }
 
         .btn-success {
-            background: #27ae60;
-            color: white;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            background: var(--accent-green);
+            color: #ffffff;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 25px;
+            background: #13161c;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
         }
 
         th, td {
-            padding: 15px;
+            padding: 16px 20px;
             text-align: left;
-            border-bottom: 1px solid #e1e8ed;
+            border-bottom: 1px solid var(--border-color);
         }
 
         th {
-            background: #f8f9fa;
+            background: #1a1e28;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--gold-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
         }
 
-        tr:hover {
-            background: #f8f9fa;
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr {
+            transition: var(--transition);
+        }
+
+        tr:hover td {
+            background: var(--bg-card-hover);
         }
 
         .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            border-color: var(--accent-green);
         }
 
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            border-color: var(--accent-red);
         }
 
         .card {
-            background: white;
-            border: 2px solid #e1e8ed;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+            background: #13161c;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            border-color: rgba(212, 175, 55, 0.3);
         }
 
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #181b22 0%, #1e222b 100%);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 30px 25px;
+            border-radius: 12px;
             text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gold-primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold-primary);
+            box-shadow: 0 15px 35px rgba(212, 175, 55, 0.15);
         }
 
         .stat-card h3 {
-            font-size: 2em;
+            font-size: 2.2rem;
             margin-bottom: 10px;
+            color: var(--gold-primary);
+            font-weight: 700;
+            font-family: 'Playfair Display', serif;
         }
 
         .stat-card p {
-            font-size: 1.1em;
-            opacity: 0.9;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin: 5px 0;
+        }
+
+        .stat-card p strong {
+            color: var(--text-main);
+            font-weight: 600;
         }
 
         .filters {
             display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 20px;
+            margin-bottom: 30px;
             flex-wrap: wrap;
+            align-items: flex-end;
         }
 
         .filters .form-group {
             flex: 1;
-            min-width: 200px;
+            min-width: 220px;
             margin-bottom: 0;
         }
 
@@ -226,62 +424,98 @@
         }
 
         .btn-small {
-            padding: 8px 15px;
-            font-size: 14px;
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            border-radius: 8px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 12, 16, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 40px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+        }
+
+        .text-danger { color: var(--accent-red); font-weight: 600; }
+        .text-success { color: var(--accent-green); font-weight: 600; }
+        
+        checkbox {
+            accent-color: var(--gold-primary);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>💈 Sistema Barbearia</h1>
-            <p>Gestão de atendimentos e comissões</p>
+            <h1><i class="fas fa-cut"></i> Barbearia Michael Barber <i class="fas fa-cut"></i></h1>
+            <p>Sistema de Gest├úo Premium</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('atendimento')">Caixa</button>
-            <button class="tab" onclick="showTab('relatorio')">Relatórios</button>
-            <button class="tab" onclick="showTab('historico')">Histórico</button>
-            <button class="tab" onclick="showTab('barbeiros')">Barbeiros</button>
-            <button class="tab" onclick="showTab('servicos')">Serviços</button>
+            <button class="tab active" onclick="showTab('atendimento')"><i class="fas fa-cash-register"></i> Caixa</button>
+            <button class="tab" onclick="showTab('relatorio')"><i class="fas fa-chart-line"></i> Relat├│rios</button>
+            <button class="tab" onclick="showTab('historico')"><i class="fas fa-history"></i> Hist├│rico</button>
+            <button class="tab" onclick="showTab('barbeiros')"><i class="fas fa-users"></i> Barbeiros</button>
+            <button class="tab" onclick="showTab('servicos')"><i class="fas fa-scissors"></i> Servi├ºos</button>
         </div>
 
         <div class="content">
             <div id="atendimento" class="section active">
-                <h2>Registrar Atendimento</h2>
+                <h2><i class="fas fa-cash-register" style="color: var(--gold-primary);"></i> Registrar Atendimento</h2>
                 <div id="atendimento-alert"></div>
-                <form id="form-atendimento">
-                    <div class="form-group">
-                        <label for="atend-barbeiro">Barbeiro:</label>
-                        <select id="atend-barbeiro" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="atend-servico">Serviço:</label>
-                        <select id="atend-servico" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label for="atend-valor">Valor Cobrado (R$):</label>
-                        <input type="number" id="atend-valor" step="0.01" required>
-                    </div>
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="atend-pigmentacao"> Tem Pigmentação/Tinta?
-                        </label>
-                    </div>
-                    <div class="form-group" id="div-valor-tinta" style="display: none;">
-                        <label for="atend-valor-tinta">Valor da Tinta (R$):</label>
-                        <input type="number" id="atend-valor-tinta" step="0.01" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="atend-obs">Observação (opcional):</label>
-                        <textarea id="atend-obs" rows="3"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Registrar Atendimento</button>
-                </form>
+                <div class="card" style="max-width: 800px; margin: 0 auto;">
+                    <form id="form-atendimento">
+                        <div class="form-group">
+                            <label for="atend-barbeiro">Barbeiro:</label>
+                            <select id="atend-barbeiro" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="atend-servico">Servi├ºo:</label>
+                            <select id="atend-servico" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="atend-valor">Valor Cobrado (R$):</label>
+                            <input type="number" id="atend-valor" step="0.01" required>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="atend-pigmentacao" disabled style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="atend-pigmentacao" style="margin-bottom: 0; cursor: pointer;">Tem Pigmenta├º├úo/Tinta? <span style="color: var(--accent-red); font-size: 0.85em;">(Apenas Dono)</span></label>
+                        </div>
+                        <div class="form-group" id="div-valor-tinta" style="display: none; margin-top: 15px;">
+                            <label for="atend-valor-tinta">Valor da Tinta (R$):</label>
+                            <input type="number" id="atend-valor-tinta" step="0.01" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="atend-obs">Observa├º├úo (opcional):</label>
+                            <textarea id="atend-obs" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fas fa-check-circle"></i> Registrar Atendimento</button>
+                    </form>
+                </div>
             </div>
 
             <div id="barbeiros" class="section">
-                <h2>Gerenciar Barbeiros</h2>
+                <h2><i class="fas fa-users" style="color: var(--gold-primary);"></i> Gerenciar Barbeiros</h2>
                 <div id="barbeiro-alert"></div>
                 <div class="card">
                     <h3>Adicionar Barbeiro</h3>
@@ -291,27 +525,27 @@
                             <input type="text" id="barb-nome" required>
                         </div>
                         <div class="form-group">
-                            <label for="barb-comissao">Comissão (%):</label>
+                            <label for="barb-comissao">Comiss├úo (%):</label>
                             <input type="number" id="barb-comissao" step="0.01" min="0" max="100" required>
                         </div>
-                        <button type="submit" class="btn btn-success">Adicionar</button>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-plus"></i> Adicionar Barbeiro</button>
                     </form>
                 </div>
                 <table id="table-barbeiros">
                     <thead>
                         <tr>
                             <th>Nome</th>
-                            <th>Comissão (%)</th>
+                            <th>Comiss├úo (%)</th>
                             <th>Tipo</th>
-                            <th>Ações</th>
+                            <th>A├º├Áes</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
                 
-                <div id="modal-editar-barbeiro" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
-                    <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:30px; border-radius:10px; min-width:400px;">
-                        <h3>Editar Barbeiro</h3>
+                <div id="modal-editar-barbeiro" class="modal-overlay">
+                    <div class="modal-content">
+                        <h3 style="margin-top: 0; margin-bottom: 20px;">Editar Barbeiro</h3>
                         <form id="form-editar-barbeiro">
                             <input type="hidden" id="edit-barb-id">
                             <div class="form-group">
@@ -319,12 +553,12 @@
                                 <input type="text" id="edit-barb-nome" required>
                             </div>
                             <div class="form-group">
-                                <label for="edit-barb-comissao">Comissão (%):</label>
+                                <label for="edit-barb-comissao">Comiss├úo (%):</label>
                                 <input type="number" id="edit-barb-comissao" step="0.01" min="0" max="100" required>
                             </div>
-                            <div style="display:flex; gap:10px;">
-                                <button type="submit" class="btn btn-success">Salvar</button>
-                                <button type="button" class="btn btn-danger" onclick="closeEditModal()">Cancelar</button>
+                            <div style="display:flex; gap:10px; margin-top: 30px;">
+                                <button type="submit" class="btn btn-success" style="flex: 1;">Salvar</button>
+                                <button type="button" class="btn btn-danger" onclick="closeEditModal()" style="flex: 1;">Cancelar</button>
                             </div>
                         </form>
                     </div>
@@ -332,10 +566,10 @@
             </div>
 
             <div id="servicos" class="section">
-                <h2>Gerenciar Serviços</h2>
+                <h2><i class="fas fa-scissors" style="color: var(--gold-primary);"></i> Gerenciar Servi├ºos</h2>
                 <div id="servico-alert"></div>
                 <div class="card">
-                    <h3>Adicionar Serviço</h3>
+                    <h3>Adicionar Servi├ºo</h3>
                     <form id="form-servico">
                         <div class="form-group">
                             <label for="serv-nome">Nome:</label>
@@ -345,7 +579,11 @@
                             <label for="serv-valor">Valor (R$):</label>
                             <input type="number" id="serv-valor" step="0.01" required>
                         </div>
-                        <button type="submit" class="btn btn-success">Adicionar</button>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="serv-apenas-dono" style="width: 20px; height: 20px; cursor: pointer;">
+                            <label for="serv-apenas-dono" style="margin-bottom: 0; cursor: pointer;">Apenas para o Dono</label>
+                        </div>
+                        <button type="submit" class="btn btn-success" style="margin-top: 15px;"><i class="fas fa-plus"></i> Adicionar Servi├ºo</button>
                     </form>
                 </div>
                 <table id="table-servicos">
@@ -353,28 +591,54 @@
                         <tr>
                             <th>Nome</th>
                             <th>Valor (R$)</th>
-                            <th>Restrição</th>
-                            <th>Ações</th>
+                            <th>Restri├º├úo</th>
+                            <th>A├º├Áes</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
+                
+                <div id="modal-editar-servico" class="modal-overlay">
+                    <div class="modal-content">
+                        <h3 style="margin-top: 0; margin-bottom: 20px;">Editar Servi├ºo</h3>
+                        <form id="form-editar-servico">
+                            <input type="hidden" id="edit-serv-id">
+                            <div class="form-group">
+                                <label for="edit-serv-nome">Nome:</label>
+                                <input type="text" id="edit-serv-nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-serv-valor">Valor (R$):</label>
+                                <input type="number" id="edit-serv-valor" step="0.01" required>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="edit-serv-apenas-dono" style="width: 20px; height: 20px; cursor: pointer;">
+                                <label for="edit-serv-apenas-dono" style="margin-bottom: 0; cursor: pointer;">Apenas para o Dono</label>
+                            </div>
+                            <div style="display:flex; gap:10px; margin-top: 30px;">
+                                <button type="submit" class="btn btn-success" style="flex: 1;">Salvar</button>
+                                <button type="button" class="btn btn-danger" onclick="closeEditServicoModal()" style="flex: 1;">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
 
             <div id="historico" class="section">
-                <h2>Histórico de Atendimentos</h2>
-                <div class="filters">
-                    <div class="form-group">
-                        <label for="hist-data-inicio">Data Início:</label>
-                        <input type="date" id="hist-data-inicio">
-                    </div>
-                    <div class="form-group">
-                        <label for="hist-data-fim">Data Fim:</label>
-                        <input type="date" id="hist-data-fim">
-                    </div>
-                    <div class="form-group">
-                        <label>&nbsp;</label>
-                        <button class="btn btn-primary" onclick="loadHistorico()">Filtrar</button>
+                <h2><i class="fas fa-history" style="color: var(--gold-primary);"></i> Hist├│rico de Atendimentos</h2>
+                <div class="card">
+                    <div class="filters">
+                        <div class="form-group">
+                            <label for="hist-data-inicio">Data In├¡cio:</label>
+                            <input type="date" id="hist-data-inicio">
+                        </div>
+                        <div class="form-group">
+                            <label for="hist-data-fim">Data Fim:</label>
+                            <input type="date" id="hist-data-fim">
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary" onclick="loadHistorico()" style="width: 100%;"><i class="fas fa-filter"></i> Filtrar</button>
+                        </div>
                     </div>
                 </div>
                 <table id="table-historico">
@@ -382,11 +646,10 @@
                         <tr>
                             <th>Data/Hora</th>
                             <th>Barbeiro</th>
-                            <th>Serviço</th>
-                            <th>Valor Total</th>
-                            <th>Tinta</th>
-                            <th>Colaborador (50%)</th>
-                            <th>Barbearia (50%)</th>
+                            <th>Servi├ºo</th>
+                            <th>Valor</th>
+                            <th>Comiss├úo %</th>
+                            <th>Valor Comiss├úo</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -394,36 +657,62 @@
             </div>
 
             <div id="relatorio" class="section">
-                <h2>Relatórios Financeiros</h2>
-                <div class="filters">
-                    <div class="form-group">
-                        <label for="rel-data-inicio">Data Início:</label>
-                        <input type="date" id="rel-data-inicio">
-                    </div>
-                    <div class="form-group">
-                        <label for="rel-data-fim">Data Fim:</label>
-                        <input type="date" id="rel-data-fim">
-                    </div>
-                    <div class="form-group">
-                        <label for="rel-periodo">Período:</label>
-                        <select id="rel-periodo" onchange="setPeriodo()">
-                            <option value="">Personalizado</option>
-                            <option value="hoje">Hoje</option>
-                            <option value="semana">Esta Semana</option>
-                            <option value="mes">Este Mês</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>&nbsp;</label>
-                        <button class="btn btn-primary" onclick="loadRelatorio()">Gerar Relatório</button>
+                <h2><i class="fas fa-chart-line" style="color: var(--gold-primary);"></i> Relat├│rios Financeiros</h2>
+                
+                <div class="card">
+                    <div class="filters">
+                        <div class="form-group">
+                            <label for="rel-periodo">Per├¡odo R├ípido:</label>
+                            <select id="rel-periodo" onchange="setPeriodo()">
+                                <option value="">Personalizado</option>
+                                <option value="hoje">Hoje</option>
+                                <option value="semana">Esta Semana</option>
+                                <option value="mes">Este M├¬s</option>
+                                <option value="ano">Este Ano</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="rel-data-inicio">Data In├¡cio:</label>
+                            <input type="date" id="rel-data-inicio">
+                        </div>
+                        <div class="form-group">
+                            <label for="rel-data-fim">Data Fim:</label>
+                            <input type="date" id="rel-data-fim">
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary" onclick="loadRelatorio()" style="width: 100%;"><i class="fas fa-chart-pie"></i> Gerar</button>
+                        </div>
                     </div>
                 </div>
                 
                 <h3>Resumo Geral</h3>
                 <div class="stats" id="stats-geral"></div>
                 
-                <h3>Por Colaborador</h3>
+                <h3>Desempenho por Colaborador</h3>
                 <div class="stats" id="stats-colaboradores"></div>
+                
+                <h3>Detalhamento por Colaborador</h3>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <table id="table-relatorio-detalhado" style="margin-top: 0; border: none;">
+                        <thead>
+                            <tr>
+                                <th>Colaborador</th>
+                                <th>Atendimentos</th>
+                                <th>Faturamento Total</th>
+                                <th>Valor Tinta</th>
+                                <th>Comiss├úo Colaborador</th>
+                                <th>Parte Barbearia</th>
+                                <th>% Participa├º├úo</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                
+                <h3>Gr├ífico de Participa├º├úo</h3>
+                <div class="card" style="text-align: center;">
+                    <canvas id="chart-participacao" style="max-height: 400px; width: 100%;"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -431,12 +720,19 @@
     <script>
         const API_URL = 'http://localhost:3000/api';
 
-        function showTab(tabName) {
+        function showTab(tabName, save = true) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
+            const tabBtn = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('onclick') && t.getAttribute('onclick').includes(`'${tabName}'`));
+            if (tabBtn) tabBtn.classList.add('active');
+            
+            const section = document.getElementById(tabName);
+            if (section) section.classList.add('active');
+
+            if (save) {
+                localStorage.setItem('activeTab', tabName);
+            }
 
             if (tabName === 'barbeiros') loadBarbeiros();
             if (tabName === 'servicos') loadServicos();
@@ -447,11 +743,13 @@
                 loadServicosSelect();
             }
         }
+        }
 
         function showAlert(containerId, message, type = 'success') {
             const container = document.getElementById(containerId);
-            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-            setTimeout(() => container.innerHTML = '', 3000);
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            container.innerHTML = `<div class="alert alert-${type}"><i class="fas ${icon}"></i> ${message}</div>`;
+            setTimeout(() => container.innerHTML = '', 4000);
         }
 
         async function loadBarbeiros() {
@@ -460,9 +758,9 @@
             const tbody = document.querySelector('#table-barbeiros tbody');
             tbody.innerHTML = barbeiros.map(b => `
                 <tr>
-                    <td>${b.nome}</td>
+                    <td><strong>${b.nome}</strong></td>
                     <td>${b.comissao_percentual}%</td>
-                    <td>${b.is_dono ? 'Dono' : 'Barbeiro'}</td>
+                    <td><span class="${b.is_dono ? 'text-success' : ''}">${b.is_dono ? 'Dono' : 'Barbeiro'}</span></td>
                     <td>
                         <div class="action-buttons">
                             <button class="btn btn-primary btn-small" onclick="editBarbeiro(${b.id}, '${b.nome}', ${b.comissao_percentual})">Editar</button>
@@ -477,16 +775,23 @@
             const res = await fetch(`${API_URL}/servicos`);
             const servicos = await res.json();
             const tbody = document.querySelector('#table-servicos tbody');
-            tbody.innerHTML = servicos.map(s => `
+            tbody.innerHTML = servicos.map(s => {
+                const restrictionText = s.apenas_dono ? 'Apenas Dono' : 'Todos';
+                const restrictionClass = s.apenas_dono ? 'text-danger' : 'text-success';
+                return `
                 <tr>
-                    <td>${s.nome}</td>
+                    <td><strong>${s.nome}</strong></td>
                     <td>R$ ${s.valor.toFixed(2)}</td>
-                    <td>${s.apenas_dono ? 'Apenas Dono' : 'Todos'}</td>
+                    <td><span class="${restrictionClass}">${restrictionText}</span></td>
                     <td>
-                        ${!s.apenas_dono ? `<button class="btn btn-danger btn-small" onclick="deleteServico(${s.id})">Remover</button>` : ''}
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-small" onclick="editServico(${s.id}, '${s.nome}', ${s.valor}, ${s.apenas_dono})">Editar</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteServico(${s.id})">Remover</button>
+                        </div>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         async function loadBarbeirosSelect() {
@@ -494,8 +799,28 @@
             const barbeiros = await res.json();
             const select = document.getElementById('atend-barbeiro');
             select.innerHTML = '<option value="">Selecione...</option>' + 
-                barbeiros.map(b => `<option value="${b.id}">${b.nome}</option>`).join('');
+                barbeiros.map(b => `<option value="${b.id}" data-is-dono="${b.is_dono}">${b.nome}</option>`).join('');
+            
+            select.addEventListener('change', () => {
+                const selectedOption = select.options[select.selectedIndex];
+                const isDono = selectedOption.getAttribute('data-is-dono') === '1';
+                const checkboxPigmentacao = document.getElementById('atend-pigmentacao');
+                const divValorTinta = document.getElementById('div-valor-tinta');
+                
+                if (!isDono) {
+                    checkboxPigmentacao.checked = false;
+                    checkboxPigmentacao.disabled = true;
+                    divValorTinta.style.display = 'none';
+                } else {
+                    checkboxPigmentacao.disabled = false;
+                }
+            });
         }
+
+        document.getElementById('atend-pigmentacao').addEventListener('change', (e) => {
+            const divValorTinta = document.getElementById('div-valor-tinta');
+            divValorTinta.style.display = e.target.checked ? 'block' : 'none';
+        });
 
         async function loadServicosSelect() {
             const res = await fetch(`${API_URL}/servicos`);
@@ -523,43 +848,16 @@
             const res = await fetch(url);
             const atendimentos = await res.json();
             const tbody = document.querySelector('#table-historico tbody');
-            tbody.innerHTML = atendimentos.map(a => {
-                const valorBarbearia = a.valor_cobrado - a.valor_comissao;
-                return `
+            tbody.innerHTML = atendimentos.map(a => `
                 <tr>
                     <td>${new Date(a.data_hora).toLocaleString('pt-BR')}</td>
-                    <td>${a.barbeiro_nome}</td>
+                    <td><strong>${a.barbeiro_nome}</strong></td>
                     <td>${a.servico_nome}${a.tem_pigmentacao ? ' 🎨' : ''}</td>
                     <td>R$ ${a.valor_cobrado.toFixed(2)}</td>
-                    <td>R$ ${(a.valor_tinta || 0).toFixed(2)}</td>
-                    <td>R$ ${a.valor_comissao.toFixed(2)}</td>
-                    <td>R$ ${valorBarbearia.toFixed(2)}</td>
+                    <td>${a.comissao_percentual}%</td>
+                    <td class="text-success">R$ ${a.valor_comissao.toFixed(2)}</td>
                 </tr>
-            `;
-            }).join('');
-        }
-
-        function setPeriodo() {
-            const periodo = document.getElementById('rel-periodo').value;
-            const hoje = new Date();
-            let inicio, fim;
-            
-            if (periodo === 'hoje') {
-                inicio = fim = hoje.toISOString().split('T')[0];
-            } else if (periodo === 'semana') {
-                const primeiroDia = new Date(hoje);
-                primeiroDia.setDate(hoje.getDate() - hoje.getDay());
-                inicio = primeiroDia.toISOString().split('T')[0];
-                fim = hoje.toISOString().split('T')[0];
-            } else if (periodo === 'mes') {
-                inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
-                fim = hoje.toISOString().split('T')[0];
-            }
-            
-            if (inicio && fim) {
-                document.getElementById('rel-data-inicio').value = inicio;
-                document.getElementById('rel-data-fim').value = fim;
-            }
+            `).join('');
         }
 
         async function loadRelatorio() {
@@ -594,16 +892,18 @@
                 </div>
                 <div class="stat-card">
                     <h3>R$ ${(geral.total_colaboradores || 0).toFixed(2)}</h3>
-                    <p><strong>Total Colaboradores (50%)</strong></p>
+                    <p><strong>Total Colaboradores</strong></p>
+                    <p>Comiss├Áes pagas</p>
                 </div>
                 <div class="stat-card">
                     <h3>R$ ${(geral.total_barbearia || 0).toFixed(2)}</h3>
-                    <p><strong>Total Barbearia (50%)</strong></p>
+                    <p><strong>Total Barbearia</strong></p>
+                    <p>Participa├º├úo l├¡quida</p>
                 </div>
                 <div class="stat-card">
                     <h3>R$ ${(geral.total_tinta || 0).toFixed(2)}</h3>
-                    <p><strong>Receita Tinta</strong></p>
-                    <p>100% Barbearia</p>
+                    <p><strong>Receita Tintas</strong></p>
+                    <p>Pigmenta├º├úo</p>
                 </div>
             `;
             
@@ -614,9 +914,111 @@
                     <p><strong>${r.nome}</strong></p>
                     <p>${r.total_atendimentos || 0} atendimentos</p>
                     <p>Faturado: R$ ${(r.total_faturado || 0).toFixed(2)}</p>
-                    <p>Tinta: R$ ${(r.total_tinta || 0).toFixed(2)}</p>
                 </div>
             `).join('');
+            
+            const totalGeral = geral.total_geral || 1;
+            const tbody = document.querySelector('#table-relatorio-detalhado tbody');
+            tbody.innerHTML = relatorio.map(r => {
+                const participacao = ((r.total_faturado || 0) / totalGeral * 100).toFixed(1);
+                return `
+                <tr>
+                    <td><strong>${r.nome}</strong></td>
+                    <td>${r.total_atendimentos || 0}</td>
+                    <td>R$ ${(r.total_faturado || 0).toFixed(2)}</td>
+                    <td>R$ ${(r.total_tinta || 0).toFixed(2)}</td>
+                    <td class="text-success">R$ ${(r.total_comissao_colaborador || 0).toFixed(2)}</td>
+                    <td style="color: var(--gold-primary); font-weight: bold;">R$ ${(r.total_barbearia || 0).toFixed(2)}</td>
+                    <td>${participacao}%</td>
+                </tr>
+            `;
+            }).join('');
+            
+            renderChart(relatorio);
+        }
+        
+        function renderChart(data) {
+            const canvas = document.getElementById('chart-participacao');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 400;
+            
+            const colors = ['#d4af37', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
+            const total = data.reduce((sum, r) => sum + (r.total_faturado || 0), 0);
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (total === 0) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '16px Plus Jakarta Sans';
+                ctx.textAlign = 'center';
+                ctx.fillText('Nenhum dado para exibir no per├¡odo', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+            
+            let currentAngle = -Math.PI / 2;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 80;
+            
+            data.forEach((r, i) => {
+                const value = r.total_faturado || 0;
+                if (value <= 0) return;
+                const sliceAngle = (value / total) * 2 * Math.PI;
+                
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = '#181b22';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                
+                const middleAngle = currentAngle + sliceAngle / 2;
+                const textX = centerX + Math.cos(middleAngle) * (radius * 0.65);
+                const textY = centerY + Math.sin(middleAngle) * (radius * 0.65);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 13px Plus Jakarta Sans';
+                ctx.textAlign = 'center';
+                ctx.fillText(r.nome, textX, textY - 8);
+                ctx.font = '12px Plus Jakarta Sans';
+                ctx.fillText(`${((value / total) * 100).toFixed(1)}%`, textX, textY + 10);
+                
+                currentAngle += sliceAngle;
+            });
+        }
+
+        function setPeriodo() {
+            const periodo = document.getElementById('rel-periodo').value;
+            const hoje = new Date();
+            let inicio = new Date();
+            let fim = new Date();
+
+            if (periodo === 'hoje') {
+                inicio = hoje;
+                fim = hoje;
+            } else if (periodo === 'semana') {
+                const primeiroDia = hoje.getDate() - hoje.getDay();
+                inicio = new Date(hoje.setDate(primeiroDia));
+                fim = new Date();
+            } else if (periodo === 'mes') {
+                inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+            } else if (periodo === 'ano') {
+                inicio = new Date(hoje.getFullYear(), 0, 1);
+                fim = new Date(hoje.getFullYear(), 11, 31);
+            }
+
+            if (periodo) {
+                document.getElementById('rel-data-inicio').value = inicio.toISOString().split('T')[0];
+                document.getElementById('rel-data-fim').value = fim.toISOString().split('T')[0];
+                loadRelatorio();
+            }
         }
 
         document.getElementById('form-barbeiro').addEventListener('submit', async (e) => {
@@ -624,38 +1026,41 @@
             const nome = document.getElementById('barb-nome').value;
             const comissao = document.getElementById('barb-comissao').value;
             
-            await fetch(`${API_URL}/barbeiros`, {
+            const res = await fetch(`${API_URL}/barbeiros`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, comissao_percentual: parseFloat(comissao) })
             });
             
-            showAlert('barbeiro-alert', 'Barbeiro adicionado com sucesso!');
-            e.target.reset();
-            loadBarbeiros();
+            if (res.ok) {
+                showAlert('barbeiro-alert', 'Barbeiro adicionado com sucesso!');
+                e.target.reset();
+                loadBarbeiros();
+            } else {
+                const data = await res.json();
+                showAlert('barbeiro-alert', data.error || 'Erro ao adicionar barbeiro', 'error');
+            }
         });
 
         document.getElementById('form-servico').addEventListener('submit', async (e) => {
             e.preventDefault();
             const nome = document.getElementById('serv-nome').value;
             const valor = document.getElementById('serv-valor').value;
+            const apenas_dono = document.getElementById('serv-apenas-dono').checked;
             
-            await fetch(`${API_URL}/servicos`, {
+            const res = await fetch(`${API_URL}/servicos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, valor: parseFloat(valor) })
+                body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono })
             });
             
-            showAlert('servico-alert', 'Serviço adicionado com sucesso!');
-            e.target.reset();
-            loadServicos();
-        });
-
-        document.getElementById('atend-pigmentacao').addEventListener('change', (e) => {
-            const divValorTinta = document.getElementById('div-valor-tinta');
-            divValorTinta.style.display = e.target.checked ? 'block' : 'none';
-            if (!e.target.checked) {
-                document.getElementById('atend-valor-tinta').value = '0';
+            if (res.ok) {
+                showAlert('servico-alert', 'Servi├ºo adicionado com sucesso!');
+                e.target.reset();
+                loadServicos();
+            } else {
+                const data = await res.json();
+                showAlert('servico-alert', data.error || 'Erro ao adicionar servi├ºo', 'error');
             }
         });
 
@@ -664,9 +1069,9 @@
             const barbeiro_id = document.getElementById('atend-barbeiro').value;
             const servico_id = document.getElementById('atend-servico').value;
             const valor_cobrado = document.getElementById('atend-valor').value;
-            const tem_pigmentacao = document.getElementById('atend-pigmentacao').checked;
-            const valor_tinta = tem_pigmentacao ? document.getElementById('atend-valor-tinta').value : 0;
             const observacao = document.getElementById('atend-obs').value;
+            const pigmentacao = document.getElementById('atend-pigmentacao').checked;
+            const valor_tinta = pigmentacao ? parseFloat(document.getElementById('atend-valor-tinta').value || 0) : 0;
             
             const res = await fetch(`${API_URL}/atendimentos`, {
                 method: 'POST',
@@ -675,9 +1080,9 @@
                     barbeiro_id: parseInt(barbeiro_id),
                     servico_id: parseInt(servico_id),
                     valor_cobrado: parseFloat(valor_cobrado),
-                    valor_tinta: parseFloat(valor_tinta),
-                    tem_pigmentacao: tem_pigmentacao,
-                    observacao
+                    observacao,
+                    valor_tinta,
+                    tem_pigmentacao: pigmentacao
                 })
             });
             
@@ -700,7 +1105,7 @@
         }
 
         async function deleteServico(id) {
-            if (confirm('Deseja realmente remover este serviço?')) {
+            if (confirm('Deseja realmente remover este servi├ºo?')) {
                 await fetch(`${API_URL}/servicos/${id}`, { method: 'DELETE' });
                 loadServicos();
             }
@@ -715,6 +1120,18 @@
 
         function closeEditModal() {
             document.getElementById('modal-editar-barbeiro').style.display = 'none';
+        }
+
+        function editServico(id, nome, valor, apenas_dono) {
+            document.getElementById('edit-serv-id').value = id;
+            document.getElementById('edit-serv-nome').value = nome;
+            document.getElementById('edit-serv-valor').value = valor;
+            document.getElementById('edit-serv-apenas-dono').checked = apenas_dono;
+            document.getElementById('modal-editar-servico').style.display = 'block';
+        }
+
+        function closeEditServicoModal() {
+            document.getElementById('modal-editar-servico').style.display = 'none';
         }
 
         document.getElementById('form-editar-barbeiro').addEventListener('submit', async (e) => {
@@ -733,8 +1150,26 @@
             loadBarbeiros();
         });
 
-        loadBarbeirosSelect();
-        loadServicosSelect();
+        document.getElementById('form-editar-servico').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-serv-id').value;
+            const nome = document.getElementById('edit-serv-nome').value;
+            const valor = document.getElementById('edit-serv-valor').value;
+            const apenas_dono = document.getElementById('edit-serv-apenas-dono').checked;
+            
+            await fetch(`${API_URL}/servicos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono })
+            });
+            
+            closeEditServicoModal();
+            loadServicos();
+        });
+
+        const savedTab = localStorage.getItem('activeTab') || 'atendimento';
+        showTab(savedTab, false);
     </script>
 </body>
 </html>
+

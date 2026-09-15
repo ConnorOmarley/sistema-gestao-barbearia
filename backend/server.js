@@ -1,14 +1,19 @@
 import express from 'express';
 import cors from 'cors';
-import { join, basename } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, join, basename } from 'path';
 import { existsSync, readdirSync } from 'fs';
 import db, { saveDatabase, backupDatabase, backupsDir } from './database.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(join(__dirname, '../frontend')));
 
 function exec(query, params = []) {
   const result = db.exec(query, params);
@@ -76,10 +81,10 @@ app.post('/api/servicos', (req, res) => {
 });
 
 app.put('/api/servicos/:id', (req, res) => {
-  const { nome, valor } = req.body;
-  db.run('UPDATE servicos SET nome = ?, valor = ? WHERE id = ?', [nome, valor, req.params.id]);
+  const { nome, valor, apenas_dono } = req.body;
+  db.run('UPDATE servicos SET nome = ?, valor = ?, apenas_dono = ? WHERE id = ?', [nome, valor, apenas_dono, req.params.id]);
   saveDatabase();
-  res.json({ id: req.params.id, nome, valor });
+  res.json({ id: req.params.id, nome, valor, apenas_dono });
 });
 
 app.delete('/api/servicos/:id', (req, res) => {
@@ -180,21 +185,20 @@ app.get('/api/relatorio/comissoes', (req, res) => {
   `;
   
   const params = [];
+  const conditions = ['b.ativo = 1'];
   
-  if (data_inicio || data_fim) {
-    query += ' WHERE 1=1';
-    
-    if (data_inicio) {
-      query += ' AND a.data_hora >= ?';
-      params.push(data_inicio);
-    }
-    
-    if (data_fim) {
-      query += ' AND a.data_hora <= ?';
-      params.push(data_fim);
-    }
+if (data_inicio) {
+    conditions.push('(a.data_hora >= ? OR a.data_hora IS NULL)');
+    params.push(data_inicio);
   }
-  
+
+  if (data_fim) {
+    conditions.push('(a.data_hora <= ? OR a.data_hora IS NULL)');
+    params.push(data_fim);
+  }
+
+  query += ' WHERE ' + conditions.join(' AND ');
+
   query += ' GROUP BY b.id, b.nome, b.is_dono ORDER BY b.nome';
   
   const relatorio = getAll(query, params);
