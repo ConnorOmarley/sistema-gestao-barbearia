@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import db, { saveDatabase } from './database.js';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, basename } from 'path';
+import { existsSync, readdirSync } from 'fs';
+import db, { saveDatabase, backupDatabase, backupsDir } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -107,7 +108,13 @@ app.post('/api/atendimentos', (req, res) => {
   }
   
   const comissao_percentual = barbeiro.comissao_percentual;
-  const valor_comissao = (valor_cobrado * comissao_percentual) / 100;
+  
+  let valor_para_comissao = valor_cobrado;
+  if (tem_pigmentacao && valor_tinta > 0) {
+    valor_para_comissao = valor_cobrado - valor_tinta;
+  }
+  
+  const valor_comissao = (valor_para_comissao * comissao_percentual) / 100;
   const data_hora = new Date().toISOString();
   const tinta = (barbeiro.is_dono && valor_tinta) ? parseFloat(valor_tinta) : 0;
   const pigmentacao = (barbeiro.is_dono && (tem_pigmentacao || tinta > 0)) ? 1 : 0;
@@ -178,7 +185,7 @@ app.delete('/api/atendimentos/:id', (req, res) => {
 });
 
 app.get('/api/relatorio/comissoes', (req, res) => {
-  const { data_inicio, data_fim } = req.query;
+  const { data_inicio, data_fim, periodo } = req.query;
   
   let joinConditions = '';
   const params = [];
@@ -250,7 +257,31 @@ app.get('/api/relatorio/geral', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.post('/api/backup', (req, res) => {
+  const backupPath = backupDatabase();
+  res.json({ success: true, arquivo: basename(backupPath) });
+});
+
+app.get('/api/backup', (req, res) => {
+  const { arquivo } = req.query;
+  if (arquivo) {
+    const backupPath = join(backupsDir, arquivo);
+    if (!backupPath.startsWith(backupsDir) || !existsSync(backupPath)) {
+      return res.status(404).json({ error: 'Backup não encontrado' });
+    }
+    return res.download(backupPath);
+  }
+  if (!existsSync(backupsDir)) {
+    return res.json([]);
+  }
+  const backups = readdirSync(backupsDir)
+    .filter(f => f.startsWith('barbearia-') && f.endsWith('.db'))
+    .sort()
+    .reverse();
+  res.json(backups);
+});
+
+app.listen(PORT, '127.0.0.1', () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
 

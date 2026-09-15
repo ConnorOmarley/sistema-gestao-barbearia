@@ -1,11 +1,13 @@
 import initSqlJs from 'sql.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, mkdirSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const dbPath = join(__dirname, 'barbearia.db');
+const backupsDir = join(__dirname, 'backups');
+const MAX_BACKUPS = 20;
 
 const SQL = await initSqlJs();
 let db;
@@ -70,7 +72,27 @@ function saveDatabase() {
   writeFileSync(dbPath, data);
 }
 
+function backupDatabase() {
+  saveDatabase();
+  if (!existsSync(backupsDir)) {
+    mkdirSync(backupsDir, { recursive: true });
+  }
+  const date = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const stamp = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  const backupPath = join(backupsDir, `barbearia-${stamp}.db`);
+  writeFileSync(backupPath, db.export());
+  const backups = readdirSync(backupsDir)
+    .filter(f => f.startsWith('barbearia-') && f.endsWith('.db'))
+    .sort();
+  while (backups.length > MAX_BACKUPS) {
+    unlinkSync(join(backupsDir, backups.shift()));
+  }
+  return backupPath;
+}
+
 setInterval(saveDatabase, 5000);
+setInterval(backupDatabase, 5 * 60 * 1000);
 
 process.on('exit', saveDatabase);
 process.on('SIGINT', () => {
@@ -79,4 +101,4 @@ process.on('SIGINT', () => {
 });
 
 export default db;
-export { saveDatabase };
+export { saveDatabase, backupDatabase, backupsDir };

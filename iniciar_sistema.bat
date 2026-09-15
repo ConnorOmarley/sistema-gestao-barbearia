@@ -25,6 +25,19 @@ if exist "%~dp0bin\node.exe" (
     )
 )
 
+:: 2. Verificar dependencias instaladas do backend
+cd /d "%~dp0backend"
+if not exist "%~dp0backend\node_modules" (
+    echo Instalando dependencias (primeira vez)...
+    call "%~dp0Instalar.bat"
+    if errorlevel 1 (
+        echo.
+        echo [ERRO] Falha ao preparar o sistema. Execute o "Instalar.bat" manualmente e tente de novo.
+        pause
+        exit /b 1
+    )
+)
+
 echo Iniciando o servidor local...
 echo.
 
