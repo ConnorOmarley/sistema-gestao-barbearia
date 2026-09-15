@@ -93,7 +93,7 @@ app.delete('/api/servicos/:id', (req, res) => {
 });
 
 app.post('/api/atendimentos', (req, res) => {
-  const { barbeiro_id, servico_id, valor_cobrado, observacao } = req.body;
+  const { barbeiro_id, servico_id, valor_cobrado, observacao, valor_tinta, tem_pigmentacao } = req.body;
   
   const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ?', [barbeiro_id]);
   const servico = getOne('SELECT * FROM servicos WHERE id = ?', [servico_id]);
@@ -109,17 +109,21 @@ app.post('/api/atendimentos', (req, res) => {
   const comissao_percentual = barbeiro.comissao_percentual;
   const valor_comissao = (valor_cobrado * comissao_percentual) / 100;
   const data_hora = new Date().toISOString();
+  const tinta = (barbeiro.is_dono && valor_tinta) ? parseFloat(valor_tinta) : 0;
+  const pigmentacao = (barbeiro.is_dono && (tem_pigmentacao || tinta > 0)) ? 1 : 0;
   
   const id = run(`
-    INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, comissao_percentual, valor_comissao, data_hora, observacao)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [barbeiro_id, servico_id, valor_cobrado, comissao_percentual, valor_comissao, data_hora, observacao]);
+    INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [barbeiro_id, servico_id, valor_cobrado, tinta, pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao]);
   
   res.json({
     id,
     barbeiro_id,
     servico_id,
     valor_cobrado,
+    valor_tinta: tinta,
+    tem_pigmentacao: pigmentacao,
     comissao_percentual,
     valor_comissao,
     data_hora
@@ -161,35 +165,35 @@ app.get('/api/atendimentos', (req, res) => {
 app.get('/api/relatorio/comissoes', (req, res) => {
   const { data_inicio, data_fim } = req.query;
   
-  let query = `
+  let joinConditions = '';
+  const params = [];
+  
+  if (data_inicio) {
+    joinConditions += ' AND a.data_hora >= ?';
+    params.push(data_inicio);
+  }
+  
+  if (data_fim) {
+    joinConditions += ' AND a.data_hora <= ?';
+    params.push(data_fim);
+  }
+  
+  const query = `
     SELECT 
       b.id,
       b.nome,
       b.is_dono,
       COUNT(a.id) as total_atendimentos,
-      SUM(a.valor_cobrado) as total_faturado,
-      SUM(a.valor_tinta) as total_tinta,
-      SUM(a.valor_comissao) as total_comissao_colaborador,
-      SUM(a.valor_cobrado - a.valor_comissao) as total_barbearia
+      COALESCE(SUM(a.valor_cobrado), 0) as total_faturado,
+      COALESCE(SUM(a.valor_tinta), 0) as total_tinta,
+      COALESCE(SUM(a.valor_comissao), 0) as total_comissao_colaborador,
+      COALESCE(SUM(a.valor_cobrado - a.valor_comissao), 0) as total_barbearia
     FROM barbeiros b
-    LEFT JOIN atendimentos a ON b.id = a.barbeiro_id
+    LEFT JOIN atendimentos a ON b.id = a.barbeiro_id ${joinConditions}
+    WHERE b.ativo = 1
+    GROUP BY b.id, b.nome, b.is_dono
+    ORDER BY b.nome
   `;
-  
-  const params = [];
-  const conditions = ['b.ativo = 1'];
-  
-  if (data_inicio) {
-    conditions.push('(a.data_hora >= ? OR a.data_hora IS NULL)');
-    params.push(data_inicio);
-  }
-  
-  if (data_fim) {
-    conditions.push('(a.data_hora <= ? OR a.data_hora IS NULL)');
-    params.push(data_fim);
-  }
-  
-  query += ' WHERE ' + conditions.join(' AND ');
-  query += ' GROUP BY b.id, b.nome, b.is_dono ORDER BY b.nome';
   
   const relatorio = getAll(query, params);
   res.json(relatorio);
@@ -200,10 +204,10 @@ app.get('/api/relatorio/geral', (req, res) => {
   
   let query = `
     SELECT 
-      SUM(valor_cobrado) as total_geral,
-      SUM(valor_tinta) as total_tinta,
-      SUM(valor_comissao) as total_colaboradores,
-      SUM(valor_cobrado - valor_comissao) as total_barbearia,
+      COALESCE(SUM(valor_cobrado), 0) as total_geral,
+      COALESCE(SUM(valor_tinta), 0) as total_tinta,
+      COALESCE(SUM(valor_comissao), 0) as total_colaboradores,
+      COALESCE(SUM(valor_cobrado - valor_comissao), 0) as total_barbearia,
       COUNT(id) as total_atendimentos
     FROM atendimentos
     WHERE 1=1

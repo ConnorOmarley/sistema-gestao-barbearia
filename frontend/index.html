@@ -743,7 +743,6 @@
                 loadServicosSelect();
             }
         }
-        }
 
         function showAlert(containerId, message, type = 'success') {
             const container = document.getElementById(containerId);
@@ -1081,7 +1080,8 @@
                     servico_id: parseInt(servico_id),
                     valor_cobrado: parseFloat(valor_cobrado),
                     observacao,
-                    valor_tinta
+                    valor_tinta,
+                    tem_pigmentacao: pigmentacao ? 1 : 0
                 })
             });
             
