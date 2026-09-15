@@ -1,12 +1,18 @@
 import express from 'express';
 import cors from 'cors';
 import db, { saveDatabase } from './database.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(join(__dirname, '../frontend')));
 
 function exec(query, params = []) {
   const result = db.exec(query, params);
