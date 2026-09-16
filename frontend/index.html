@@ -199,6 +199,45 @@
             animation: pulse-dot 2s infinite;
         }
 
+        .status-badge:hover {
+            filter: brightness(1.15);
+            box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
+        }
+
+        .donos-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            color: var(--gold-primary);
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
+        }
+
+        .donos-status-badge:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 18px rgba(212, 175, 55, 0.45);
+        }
+
+        .nav-tab.nav-tab-relatorio {
+            background: linear-gradient(135deg, #1a2a44, #2c4a6e);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: var(--gold-primary);
+        }
+
+        .nav-tab.nav-tab-relatorio.active {
+            background: linear-gradient(135deg, var(--gold-primary), #f0d060);
+            color: #0b0f17;
+            border-color: var(--gold-primary);
+        }
+
         @keyframes pulse-dot {
             0% { transform: scale(0.95); opacity: 0.8; }
             50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px var(--emerald); }
@@ -1136,13 +1175,17 @@
             </div>
 
             <div class="header-meta">
+                <div id="btn-dono-badge" class="donos-status-badge" onclick="toggleAcessoDono()" title="Área do Dono" style="display:none;">
+                    <i class="fas fa-crown" style="color: var(--gold-primary);"></i>
+                    <span>Dono</span>
+                </div>
                 <div class="live-clock-badge">
                     <i class="far fa-clock"></i>
                     <span id="live-clock">--:--:--</span>
                 </div>
-                <div class="status-badge">
+                <div class="status-badge" id="status-badge-dono" style="cursor:pointer;" onclick="toggleAcessoDono()" title="Área do Dono (Relatórios protegidos)">
                     <span class="status-dot"></span>
-                    <span>Sistema Conectado</span>
+                    <span><i class="fas fa-lock"></i> Área do Dono</span>
                 </div>
             </div>
         </header>
@@ -1152,9 +1195,6 @@
             <button class="nav-tab active" onclick="showTab('atendimento')">
                 <i class="fas fa-cash-register"></i> Caixa & Atendimento
             </button>
-            <button class="nav-tab" onclick="showTab('relatorio')">
-                <i class="fas fa-chart-line"></i> Relatórios Financeiros
-            </button>
             <button class="nav-tab" onclick="showTab('historico')">
                 <i class="fas fa-history"></i> Histórico
             </button>
@@ -1163,6 +1203,9 @@
             </button>
             <button class="nav-tab" onclick="showTab('servicos')">
                 <i class="fas fa-scissors"></i> Serviços
+            </button>
+            <button class="nav-tab nav-tab-relatorio" id="nav-tab-relatorio" style="display:none;" onclick="showTab('relatorio')">
+                <i class="fas fa-chart-line"></i> Relatórios Financeiros
             </button>
         </nav>
 
@@ -1718,12 +1761,41 @@
             return sessionStorage.getItem('relatorioToken') || '';
         }
 
+        function atualizarUIacessoDono() {
+            const temToken = !!relatorioToken();
+            const navRelatorio = document.getElementById('nav-tab-relatorio');
+            const badgeDono = document.getElementById('btn-dono-badge');
+            const statusBadge = document.getElementById('status-badge-dono');
+            if (navRelatorio) navRelatorio.style.display = temToken ? '' : 'none';
+            if (badgeDono) badgeDono.style.display = temToken ? '' : 'none';
+            if (statusBadge) {
+                statusBadge.innerHTML = temToken
+                    ? '<i class="fas fa-lock-open"></i> Área do Dono'
+                    : '<i class="fas fa-lock"></i> Área do Dono';
+            }
+        }
+
+        function toggleAcessoDono() {
+            if (relatorioToken()) {
+                removerTokenRelatorio();
+                atualizarUIacessoDono();
+                if (document.getElementById('relatorio').classList.contains('active')) {
+                    showTab('atendimento', false);
+                }
+                showToast('Acesso do dono encerrado.', 'success');
+            } else {
+                abrirModalSenhaRelatorio();
+            }
+        }
+
         function salvarTokenRelatorio(token) {
             sessionStorage.setItem('relatorioToken', token);
+            atualizarUIacessoDono();
         }
 
         function removerTokenRelatorio() {
             sessionStorage.removeItem('relatorioToken');
+            atualizarUIacessoDono();
         }
 
         function abrirModalSenhaRelatorio() {
@@ -2406,6 +2478,7 @@
         // Inicialização
         const savedTab = localStorage.getItem('activeTab') || 'atendimento';
         showTab(savedTab, false);
+        atualizarUIacessoDono();
     </script>
 </body>
 </html>
