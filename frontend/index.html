@@ -1213,10 +1213,10 @@
                             <div class="switch-container">
                                 <div class="switch-label-group">
                                     <span class="switch-title">Pigmentação / Tinta</span>
-                                    <span class="switch-subtitle">Taxa de produto exclusiva para o Dono</span>
+                                    <span class="switch-subtitle">Lucro da tinta vai para o Dono</span>
                                 </div>
                                 <label class="toggle-switch">
-                                    <input type="checkbox" id="atend-pigmentacao" disabled>
+                                    <input type="checkbox" id="atend-pigmentacao">
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
@@ -1689,7 +1689,7 @@
             const servico = cachedServicos.find(s => s.id == servicoId);
 
             const valorCobrado = parseFloat(inputValor.value || 0);
-            const valorTinta = (checkTinta.checked && barbeiro?.is_dono) ? parseFloat(inputTinta.value || 0) : 0;
+            const valorTinta = checkTinta.checked ? parseFloat(inputTinta.value || 0) : 0;
 
             document.getElementById('preview-barbeiro').textContent = barbeiro ? barbeiro.nome : '--';
             document.getElementById('preview-comissao-taxa').textContent = barbeiro ? `${barbeiro.comissao_percentual}%` : '0%';
@@ -1697,7 +1697,7 @@
 
             if (barbeiro) {
                 const comissao = (valorCobrado * barbeiro.comissao_percentual) / 100;
-                const parteBarbearia = valorCobrado - comissao;
+                const parteBarbearia = (valorCobrado + valorTinta) - comissao;
                 document.getElementById('preview-comissao-valor').textContent = `R$ ${comissao.toFixed(2)}`;
                 document.getElementById('preview-barbearia-valor').textContent = `R$ ${parteBarbearia.toFixed(2)}`;
             } else {
@@ -1800,18 +1800,10 @@
                     cachedBarbeiros.map(b => `<option value="${b.id}" data-is-dono="${b.is_dono}">${b.nome} (${b.comissao_percentual}%)</option>`).join('');
                 
                 select.onchange = () => {
-                    const selectedOption = select.options[select.selectedIndex];
-                    const isDono = selectedOption?.getAttribute('data-is-dono') === '1';
-                    const checkboxPigmentacao = document.getElementById('atend-pigmentacao');
                     const divValorTinta = document.getElementById('div-valor-tinta');
-                    
-                    if (!isDono) {
-                        checkboxPigmentacao.checked = false;
-                        checkboxPigmentacao.disabled = true;
-                        divValorTinta.style.display = 'none';
-                    } else {
-                        checkboxPigmentacao.disabled = false;
-                    }
+                    const checkboxPigmentacao = document.getElementById('atend-pigmentacao');
+                    const tintaChecked = checkboxPigmentacao.checked;
+                    divValorTinta.style.display = tintaChecked ? 'block' : 'none';
                     updateLivePreview();
                 };
             } catch (err) {
@@ -2144,7 +2136,6 @@
                     showToast('Atendimento registrado com sucesso!', 'success');
                     e.target.reset();
                     document.getElementById('div-valor-tinta').style.display = 'none';
-                    document.getElementById('atend-pigmentacao').disabled = true;
                     updateLivePreview();
                 } else {
                     showToast(data.error || 'Erro ao registrar atendimento', 'error');

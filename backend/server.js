@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -108,16 +108,13 @@ app.post('/api/atendimentos', (req, res) => {
   }
   
   const comissao_percentual = barbeiro.comissao_percentual;
-  
-  let valor_para_comissao = valor_cobrado;
-  if (tem_pigmentacao && valor_tinta > 0) {
-    valor_para_comissao = valor_cobrado - valor_tinta;
-  }
-  
-  const valor_comissao = (valor_para_comissao * comissao_percentual) / 100;
+
+  const valor_comissao = (valor_cobrado * comissao_percentual) / 100;
   const data_hora = new Date().toISOString();
-  const tinta = (barbeiro.is_dono && valor_tinta) ? parseFloat(valor_tinta) : 0;
-  const pigmentacao = (barbeiro.is_dono && (tem_pigmentacao || tinta > 0)) ? 1 : 0;
+  // Regra do cliente: qualquer barbeiro pode fazer pigmentacao,
+  // mas o lucro da tinta vai inteiro pro dono (nao comissionado).
+  const tinta = valor_tinta ? parseFloat(valor_tinta) : 0;
+  const pigmentacao = (tem_pigmentacao || tinta > 0) ? 1 : 0;
   
   const id = run(`
     INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao)
@@ -209,7 +206,7 @@ app.get('/api/relatorio/comissoes', (req, res) => {
       COALESCE(SUM(a.valor_cobrado), 0) as total_faturado,
       COALESCE(SUM(a.valor_tinta), 0) as total_tinta,
       COALESCE(SUM(a.valor_comissao), 0) as total_comissao_colaborador,
-      COALESCE(SUM(a.valor_cobrado - a.valor_comissao), 0) as total_barbearia
+      COALESCE(SUM((a.valor_cobrado + a.valor_tinta) - a.valor_comissao), 0) as total_barbearia
     FROM barbeiros b
     LEFT JOIN atendimentos a ON b.id = a.barbeiro_id ${joinConditions}
     WHERE b.ativo = 1
@@ -229,7 +226,7 @@ app.get('/api/relatorio/geral', (req, res) => {
       COALESCE(SUM(valor_cobrado), 0) as total_geral,
       COALESCE(SUM(valor_tinta), 0) as total_tinta,
       COALESCE(SUM(valor_comissao), 0) as total_colaboradores,
-      COALESCE(SUM(valor_cobrado - valor_comissao), 0) as total_barbearia,
+      COALESCE(SUM((valor_cobrado + valor_tinta) - valor_comissao), 0) as total_barbearia,
       COUNT(id) as total_atendimentos
     FROM atendimentos
     WHERE 1=1
