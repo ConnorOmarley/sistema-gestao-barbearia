@@ -32,6 +32,29 @@ BACKUP (CÓPIA DE SEGURANÇA):
   "backend/barbearia.db" para onde desejar (ex: seu e-mail, HD externo).
 
 ------------------------------------------------------------------------
+FOTO DE PERFIL DOS BARBEIROS:
+------------------------------------------------------------------------
+- Para colocar a foto de um barbeiro, clique no círculo (avatar) dele
+  na lista de Barbeiros e escolha a foto no computador.
+- O sistema abre uma tela de ajuste: arraste para centralizar e use a
+  barrinha ou a roda do mouse para dar o zoom. Confirme para salvar.
+- Para trocar ou remover a foto, use também o botão "Editar" do barbeiro
+  (sessão "Foto de Perfil").
+- As fotos ficam guardadas na pasta "frontend/assets/perfil" do sistema.
+- O dono da barbearia aparece com a logo da barbearia no avatar.
+
+------------------------------------------------------------------------
+COMISSÃO E PIGMENTAÇÃO:
+------------------------------------------------------------------------
+- O DONO da barbearia recebe 100% de todo serviço que ele fizer
+  (o valor cobrado + o valor da tinta, quando houver pigmentação).
+- Quando um barbeiro colaborador faz um serviço, ele recebe o percentual
+  combinado (ex: 50%) sobre o valor cobrado. O valor da TINTA vai sempre
+  para o Dono.
+- No caixa, marque "Pigmentação" (com a cor da tinta, se houver custo)
+  para registrar isso no atendimento.
+
+------------------------------------------------------------------------
 PROTEÇÃO DA ABA RELATÓRIOS (ÁREA DO DONO):
 ------------------------------------------------------------------------
 - A aba "Relatórios" é protegida por senha do Dono. Os barbeiros usam o

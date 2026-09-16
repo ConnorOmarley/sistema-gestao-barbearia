@@ -72,6 +72,7 @@ if (servicoExists.length === 0) {
   db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Corte Simples', 30.00, 0, 1)`);
   db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Barba', 20.00, 0, 1)`);
   db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Corte + Barba', 45.00, 0, 1)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Pigmentação', 80.00, 0, 1)`);
 }
 
 function saveDatabase() {
