@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join, basename } from 'path';
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, writeFileSync, unlinkSync, mkdirSync } from 'fs';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import db, { saveDatabase, backupDatabase, backupsDir, getConfig, setConfig } from './database.js';
 
@@ -13,8 +13,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static(join(__dirname, '../frontend')));
+
+const perfilDir = join(__dirname, '../frontend/assets/perfil');
+if (!existsSync(perfilDir)) {
+  mkdirSync(perfilDir, { recursive: true });
+}
 
 function exec(query, params = []) {
   const result = db.exec(query, params);
@@ -47,18 +52,22 @@ function run(query, params = []) {
 }
 
 app.get('/api/barbeiros', (req, res) => {
-  const barbeiros = getAll('SELECT * FROM barbeiros WHERE ativo = 1 ORDER BY nome');
+  const barbeiros = getAll('SELECT * FROM barbeiros WHERE ativo = 1 ORDER BY is_dono DESC, id');
   res.json(barbeiros);
 });
 
 app.post('/api/barbeiros', (req, res) => {
-  const { nome, comissao_percentual, is_dono } = req.body;
-  const id = run('INSERT INTO barbeiros (nome, comissao_percentual, is_dono) VALUES (?, ?, ?)', [nome, comissao_percentual, is_dono || 0]);
-  res.json({ id, nome, comissao_percentual, is_dono: is_dono || 0 });
+  const nome = (req.body.nome || '').trim();
+  const comissao_percentual = parseFloat(req.body.comissao_percentual) || 0;
+  const is_dono = req.body.is_dono ? 1 : 0;
+  const id = run('INSERT INTO barbeiros (nome, comissao_percentual, is_dono) VALUES (?, ?, ?)', [nome, comissao_percentual, is_dono]);
+  res.json({ id, nome, comissao_percentual, is_dono });
 });
 
 app.put('/api/barbeiros/:id', (req, res) => {
-  const { nome, comissao_percentual } = req.body;
+  const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ?', [req.params.id]);
+  const nome = (req.body.nome || barbeiro.nome || '').trim();
+  const comissao_percentual = parseFloat(req.body.comissao_percentual) || barbeiro.comissao_percentual || 0;
   db.run('UPDATE barbeiros SET nome = ?, comissao_percentual = ? WHERE id = ?', [nome, comissao_percentual, req.params.id]);
   saveDatabase();
   res.json({ id: req.params.id, nome, comissao_percentual });
@@ -70,19 +79,80 @@ app.delete('/api/barbeiros/:id', (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/barbeiros/:id/foto', (req, res) => {
+  const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ? AND ativo = 1', [req.params.id]);
+  if (!barbeiro) {
+    return res.status(404).json({ error: 'Barbeiro não encontrado' });
+  }
+
+  const { foto } = req.body;
+  if (!foto || typeof foto !== 'string') {
+    return res.status(400).json({ error: 'Imagem não enviada.' });
+  }
+
+  const match = foto.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/);
+  if (!match) {
+    return res.status(400).json({ error: 'Formato de imagem inválido. Use PNG, JPG, WEBP ou GIF.' });
+  }
+
+  const ext = match[1] === 'jpg' ? 'jpg' : match[1];
+  const dados = Buffer.from(match[2], 'base64');
+  if (dados.length > 1024 * 1024) {
+    return res.status(400).json({ error: 'A imagem é muito grande. Máximo 1MB.' });
+  }
+
+  const nomeArquivo = `barbeiro_${barbeiro.id}.${ext}`;
+  const caminho = join(perfilDir, nomeArquivo);
+  writeFileSync(caminho, dados);
+
+  if (barbeiro.foto) {
+    const antiga = join(perfilDir, basename(barbeiro.foto));
+    if (existsSync(antiga) && antiga !== caminho) {
+      try { unlinkSync(antiga); } catch (e) {}
+    }
+  }
+
+  db.run('UPDATE barbeiros SET foto = ? WHERE id = ?', [`assets/perfil/${nomeArquivo}`, barbeiro.id]);
+  saveDatabase();
+  res.json({ foto: `assets/perfil/${nomeArquivo}` });
+});
+
+app.delete('/api/barbeiros/:id/foto', (req, res) => {
+  const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ? AND ativo = 1', [req.params.id]);
+  if (!barbeiro) {
+    return res.status(404).json({ error: 'Barbeiro não encontrado' });
+  }
+
+  if (barbeiro.foto) {
+    const arquivo = join(perfilDir, basename(barbeiro.foto));
+    if (existsSync(arquivo)) {
+      try { unlinkSync(arquivo); } catch (e) {}
+    }
+  }
+
+  db.run('UPDATE barbeiros SET foto = NULL WHERE id = ?', [barbeiro.id]);
+  saveDatabase();
+  res.json({ foto: null });
+});
+
 app.get('/api/servicos', (req, res) => {
   const servicos = getAll('SELECT * FROM servicos WHERE ativo = 1 ORDER BY nome');
   res.json(servicos);
 });
 
 app.post('/api/servicos', (req, res) => {
-  const { nome, valor, apenas_dono } = req.body;
-  const id = run('INSERT INTO servicos (nome, valor, apenas_dono) VALUES (?, ?, ?)', [nome, valor, apenas_dono || 0]);
-  res.json({ id, nome, valor, apenas_dono: apenas_dono || 0 });
+  const nome = (req.body.nome || '').trim();
+  const valor = parseFloat(req.body.valor) || 0;
+  const apenas_dono = req.body.apenas_dono ? 1 : 0;
+  const id = run('INSERT INTO servicos (nome, valor, apenas_dono) VALUES (?, ?, ?)', [nome, valor, apenas_dono]);
+  res.json({ id, nome, valor, apenas_dono });
 });
 
 app.put('/api/servicos/:id', (req, res) => {
-  const { nome, valor, apenas_dono } = req.body;
+  const servico = getOne('SELECT * FROM servicos WHERE id = ?', [req.params.id]);
+  const nome = (req.body.nome || servico.nome || '').trim();
+  const valor = parseFloat(req.body.valor) || servico.valor || 0;
+  const apenas_dono = req.body.apenas_dono !== undefined ? (req.body.apenas_dono ? 1 : 0) : servico.apenas_dono;
   db.run('UPDATE servicos SET nome = ?, valor = ?, apenas_dono = ? WHERE id = ?', [nome, valor, apenas_dono, req.params.id]);
   saveDatabase();
   res.json({ id: req.params.id, nome, valor, apenas_dono });
@@ -109,18 +179,21 @@ app.post('/api/atendimentos', (req, res) => {
   }
   
   const comissao_percentual = barbeiro.comissao_percentual;
-
-  const valor_comissao = (valor_cobrado * comissao_percentual) / 100;
+  let valor_comissao = (valor_cobrado * comissao_percentual) / 100;
   const data_hora = new Date().toISOString();
-  // Regra do cliente: qualquer barbeiro pode fazer pigmentacao,
-  // mas o lucro da tinta vai inteiro pro dono (nao comissionado).
   const tinta = valor_tinta ? parseFloat(valor_tinta) : 0;
   const pigmentacao = (tem_pigmentacao || tinta > 0) ? 1 : 0;
+  // Regra: comissao so existe para colaboradores. O dono recebe
+  // 100% de tudo que ele mesmo atende (servico + tinta), pois a
+  // barbearia e dele.
+  if (barbeiro.is_dono) {
+    valor_comissao = valor_cobrado + tinta;
+  }
   
   const id = run(`
     INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [barbeiro_id, servico_id, valor_cobrado, tinta, pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao]);
+  `, [barbeiro_id, servico_id, valor_cobrado, tinta, pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao || '']);
   
   res.json({
     id,
@@ -276,6 +349,7 @@ app.get('/api/relatorio/comissoes', requerAcessoRelatorio, (req, res) => {
       b.id,
       b.nome,
       b.is_dono,
+      b.foto,
       COUNT(a.id) as total_atendimentos,
       COALESCE(SUM(a.valor_cobrado), 0) as total_faturado,
       COALESCE(SUM(a.valor_tinta), 0) as total_tinta,
@@ -284,8 +358,8 @@ app.get('/api/relatorio/comissoes', requerAcessoRelatorio, (req, res) => {
     FROM barbeiros b
     LEFT JOIN atendimentos a ON b.id = a.barbeiro_id ${joinConditions}
     WHERE b.ativo = 1
-    GROUP BY b.id, b.nome, b.is_dono
-    ORDER BY b.nome
+    GROUP BY b.id, b.nome, b.is_dono, b.foto
+    ORDER BY b.is_dono DESC, b.id
   `;
   
   const relatorio = getAll(query, params);

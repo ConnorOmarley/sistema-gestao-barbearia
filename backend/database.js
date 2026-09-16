@@ -60,9 +60,11 @@ CREATE TABLE IF NOT EXISTS atendimentos (
   CREATE INDEX IF NOT EXISTS idx_atendimentos_barbeiro ON atendimentos(barbeiro_id);
 `);
 
+try { db.run('ALTER TABLE barbeiros ADD COLUMN foto TEXT'); } catch (e) {}
+
 const donoExists = db.exec('SELECT 1 FROM barbeiros WHERE is_dono = 1');
 if (donoExists.length === 0) {
-  db.run(`INSERT INTO barbeiros (nome, comissao_percentual, is_dono, ativo) VALUES ('Michael Barber', 50, 1, 1)`);
+  db.run(`INSERT INTO barbeiros (nome, comissao_percentual, is_dono, ativo) VALUES ('Michael Barber', 100, 1, 1)`);
 }
 
 const servicoExists = db.exec('SELECT 1 FROM servicos');

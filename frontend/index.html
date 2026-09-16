@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barbearia Michael Barber - Sistema de Gestão Premium</title>
+
+    <!-- Favicon (Logo da Barbearia) -->
+    <link rel="icon" type="image/png" href="assets/logo.png">
     
     <!-- Fontes Locais (100% Offline) -->
     <link rel="stylesheet" href="assets/fonts/fonts.css">
@@ -117,7 +120,7 @@
         .brand-icon {
             width: 52px;
             height: 52px;
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(17, 21, 30, 0.8) 100%);
+            background: #000000;
             border: 1px solid var(--border-gold);
             border-radius: var(--radius-md);
             display: flex;
@@ -126,6 +129,13 @@
             font-size: 1.5rem;
             color: var(--gold-primary);
             box-shadow: var(--gold-glow);
+            overflow: hidden;
+        }
+
+        .brand-logo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .brand-text h1 {
@@ -906,14 +916,46 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(17, 21, 30, 0.9) 100%);
-            border: 1px solid var(--border-gold);
+            background: var(--gold-gradient);
+            border: 2px solid var(--border-gold-bright);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            color: var(--gold-light);
+            font-weight: 800;
+            color: #0b0f17;
             font-family: 'Outfit', sans-serif;
+            box-shadow: var(--gold-glow);
+        }
+
+        .avatar-foto {
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .avatar-foto img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-foto .avatar-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            color: #fff;
+            font-size: 0.8rem;
+        }
+
+        .avatar-foto:hover .avatar-overlay {
+            opacity: 1;
         }
 
         .colaborador-info h4 {
@@ -1166,7 +1208,7 @@
         <header class="top-header">
             <div class="brand-wrapper">
                 <div class="brand-icon">
-                    <i class="fas fa-cut"></i>
+                    <img src="assets/logo.png" alt="Barbearia Michael Barber" class="brand-logo">
                 </div>
                 <div class="brand-text">
                     <h1>Michael Barber</h1>
@@ -1679,11 +1721,86 @@
         </div>
     </div>
 
+    <!-- Upload de Foto de Perfil -->
+    <input type="file" id="input-foto-perfil" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;">
+
     <!-- Scripts da Aplicação -->
     <script>
         const API_URL = 'http://localhost:3000/api';
         let cachedBarbeiros = [];
         let cachedServicos = [];
+
+        // Avatar reutilizavel: foto do perfil > logo (dono) > numero
+        function avatarBarbeiro(b, idx, estiloExtra = '', clicavel = false) {
+            let conteudo;
+            if (b.foto) {
+                conteudo = `<img src="${b.foto}" alt="${b.nome}">`;
+            } else if (b.is_dono == 1) {
+                conteudo = `<img src="assets/logo.png" alt="Dono" style="border-radius: 8px;">`;
+            } else {
+                conteudo = idx + 1;
+            }
+            const clickStarts = clicavel
+                ? `<div class="avatar-foto colaborador-avatar" onclick="trocarFoto(${b.id})" title="Trocar foto" style="${estiloExtra}">${conteudo}<div class="avatar-overlay"><i class="fas fa-camera"></i></div></div>`
+                : `<div class="colaborador-avatar" style="${estiloExtra}">${conteudo}</div>`;
+            return clickStarts;
+        }
+
+        // Upload/remoção de foto de perfil
+        async function trocarFoto(id) {
+            const input = document.getElementById('input-foto-perfil');
+            input.value = '';
+            input.onchange = async () => {
+                const arquivo = input.files[0];
+                if (!arquivo) return;
+                if (arquivo.size > 1024 * 1024) {
+                    showToast('A imagem deve ter no máximo 1MB.', 'erro');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const res = await fetch(`${API_URL}/barbeiros/${id}/foto`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ foto: reader.result })
+                        });
+                        const dados = await res.json();
+                        if (!res.ok) {
+                            showToast(dados.error || 'Erro ao salvar a foto.', 'erro');
+                            return;
+                        }
+                        const b = cachedBarbeiros.find(x => x.id == id);
+                        if (b) b.foto = dados.foto;
+                        loadBarbeiros();
+                        loadBarbeirosSelect();
+                        showToast('Foto de perfil atualizada!', 'success');
+                    } catch (err) {
+                        showToast('Falha de comunicação com o servidor.', 'erro');
+                    }
+                };
+                reader.readAsDataURL(arquivo);
+            };
+            input.click();
+        }
+
+        async function removerFoto(id) {
+            try {
+                const res = await fetch(`${API_URL}/barbeiros/${id}/foto`, { method: 'DELETE' });
+                const dados = await res.json();
+                if (!res.ok) {
+                    showToast(dados.error || 'Erro ao remover a foto.', 'erro');
+                    return;
+                }
+                const b = cachedBarbeiros.find(x => x.id == id);
+                if (b) b.foto = null;
+                loadBarbeiros();
+                loadBarbeirosSelect();
+                showToast('Foto removida.', 'success');
+            } catch (err) {
+                showToast('Falha de comunicação com o servidor.', 'erro');
+            }
+        }
 
         // Atualização do Relógio
         function updateLiveClock() {
@@ -1895,7 +2012,10 @@
             document.getElementById('preview-servico').textContent = servico ? servico.nome : '--';
 
             if (barbeiro) {
-                const comissao = (valorCobrado * barbeiro.comissao_percentual) / 100;
+                const dono = barbeiro.is_dono == 1;
+                const comissao = dono
+                    ? (valorCobrado + valorTinta)
+                    : (valorCobrado * barbeiro.comissao_percentual) / 100;
                 const parteBarbearia = (valorCobrado + valorTinta) - comissao;
                 document.getElementById('preview-comissao-valor').textContent = `R$ ${comissao.toFixed(2)}`;
                 document.getElementById('preview-barbearia-valor').textContent = `R$ ${parteBarbearia.toFixed(2)}`;
@@ -1921,14 +2041,18 @@
             try {
                 const res = await fetch(`${API_URL}/barbeiros`);
                 cachedBarbeiros = await res.json();
+                const proximoNumero = cachedBarbeiros.length + 1;
+                const inputNome = document.getElementById('barb-nome');
+                inputNome.placeholder = `Ex: Colaborador ${proximoNumero}`;
+                if (inputNome.value.trim() === '' || /^Colaborador \d+$/.test(inputNome.value.trim())) {
+                    inputNome.value = `Colaborador ${proximoNumero}`;
+                }
                 const tbody = document.querySelector('#table-barbeiros tbody');
-                tbody.innerHTML = cachedBarbeiros.map(b => `
+                tbody.innerHTML = cachedBarbeiros.map((b, idx) => `
                     <tr>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <div class="colaborador-avatar" style="width: 34px; height: 34px; font-size: 0.8rem;">
-                                    ${b.nome.substring(0, 2).toUpperCase()}
-                                </div>
+                                ${avatarBarbeiro(b, idx, 'width: 34px; height: 34px; font-size: 0.8rem; border-radius: 8px;', true)}
                                 <strong>${b.nome}</strong>
                             </div>
                         </td>
@@ -1996,7 +2120,7 @@
                 cachedBarbeiros = await res.json();
                 const select = document.getElementById('atend-barbeiro');
                 select.innerHTML = '<option value="">Selecione o profissional...</option>' + 
-                    cachedBarbeiros.map(b => `<option value="${b.id}" data-is-dono="${b.is_dono}">${b.nome} (${b.comissao_percentual}%)</option>`).join('');
+                    cachedBarbeiros.map((b, idx) => `<option value="${b.id}" data-is-dono="${b.is_dono}">${idx + 1}. ${b.nome} (${b.comissao_percentual}%)</option>`).join('');
                 
                 select.onchange = () => {
                     const divValorTinta = document.getElementById('div-valor-tinta');
@@ -2155,7 +2279,7 @@
                 containerColaboradores.innerHTML = relatorio.map(r => `
                     <div class="colaborador-card">
                         <div class="colaborador-card-header">
-                            <div class="colaborador-avatar">${r.nome.substring(0, 2).toUpperCase()}</div>
+                            ${avatarBarbeiro(r, relatorio.indexOf(r))}
                             <div class="colaborador-info">
                                 <h4>${r.nome}</h4>
                                 <span class="badge ${r.is_dono ? 'badge-gold' : 'badge-blue'}">${r.is_dono ? 'Proprietário' : 'Barbeiro'}</span>
