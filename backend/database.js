@@ -36,7 +36,7 @@ db.run(`
     ativo INTEGER DEFAULT 1
   );
 
-  CREATE TABLE IF NOT EXISTS atendimentos (
+CREATE TABLE IF NOT EXISTS atendimentos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     barbeiro_id INTEGER NOT NULL,
     servico_id INTEGER NOT NULL,
@@ -49,6 +49,11 @@ db.run(`
     observacao TEXT,
     FOREIGN KEY (barbeiro_id) REFERENCES barbeiros(id),
     FOREIGN KEY (servico_id) REFERENCES servicos(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS config (
+    chave TEXT PRIMARY KEY,
+    valor TEXT
   );
 
   CREATE INDEX IF NOT EXISTS idx_atendimentos_data ON atendimentos(data_hora);
@@ -94,6 +99,17 @@ function backupDatabase() {
 setInterval(saveDatabase, 5000);
 setInterval(backupDatabase, 5 * 60 * 1000);
 
+function getConfig(chave) {
+  const result = db.exec('SELECT valor FROM config WHERE chave = ?', [chave]);
+  if (result.length === 0 || result[0].values.length === 0) return null;
+  return result[0].values[0][0];
+}
+
+function setConfig(chave, valor) {
+  db.run('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)', [chave, valor]);
+  saveDatabase();
+}
+
 process.on('exit', saveDatabase);
 process.on('SIGINT', () => {
   saveDatabase();
@@ -101,4 +117,4 @@ process.on('SIGINT', () => {
 });
 
 export default db;
-export { saveDatabase, backupDatabase, backupsDir };
+export { saveDatabase, backupDatabase, backupsDir, getConfig, setConfig };

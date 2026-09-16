@@ -30,4 +30,16 @@ BACKUP (CÓPIA DE SEGURANÇA):
 ------------------------------------------------------------------------
 - Para fazer um backup, basta copiar a pasta inteira ou o arquivo
   "backend/barbearia.db" para onde desejar (ex: seu e-mail, HD externo).
+
+------------------------------------------------------------------------
+PROTEÇÃO DA ABA RELATÓRIOS (ÁREA DO DONO):
+------------------------------------------------------------------------
+- A aba "Relatórios" é protegida por senha do Dono. Os barbeiros usam o
+  sistema normalmente (atendimentos, histórico, cadastros), mas só quem
+  tem a senha do Dono consegue ver os relatórios financeiros.
+- PRIMEIRO USO: ao clicar em "Relatórios", o sistema pede para definir
+  a senha do Dono (mínimo 4 caracteres). Defina e confirme.
+- Depois disso, toda vez que abrir "Relatórios" será pedida essa senha.
+- ESQUECEU A SENHA? Pode resetar apagando tudo, ou com o Dono definindo
+  novamente em outro navegador via o terminal/console - procure o Carlos.
 ========================================================================

@@ -1603,6 +1603,39 @@
         </div>
     </div>
 
+    <!-- Modal Senha do Relatório -->
+    <div id="modal-senha-relatorio" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-lock" style="color: var(--gold-primary);"></i> Área do Dono</h3>
+                <button class="modal-close-btn" onclick="closeSenhaRelatorioModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-senha-relatorio" autocomplete="off">
+                <div id="senha-relatorio-status" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;"></div>
+                <div class="form-group">
+                    <label for="senha-relatorio-input" id="senha-relatorio-label">Senha do Dono:</label>
+                    <div class="input-icon-wrapper">
+                        <i class="fas fa-key"></i>
+                        <input type="password" id="senha-relatorio-input" required minlength="4">
+                    </div>
+                </div>
+                <div id="senha-relatorio-confirmar-grupo" style="display: none;">
+                    <div class="form-group">
+                        <label for="senha-relatorio-confirmar">Confirmar Senha:</label>
+                        <div class="input-icon-wrapper">
+                            <i class="fas fa-key"></i>
+                            <input type="password" id="senha-relatorio-confirmar">
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; gap: 12px; margin-top: 24px;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;" id="senha-relatorio-botao">Acessar Relatórios</button>
+                    <button type="button" class="btn btn-outline" onclick="closeSenhaRelatorioModal()" style="flex: 1;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts da Aplicação -->
     <script>
         const API_URL = 'http://localhost:3000/api';
@@ -1663,6 +1696,11 @@
             if (tabName === 'servicos') loadServicos();
             if (tabName === 'historico') loadHistorico();
             if (tabName === 'relatorio') {
+                if (!relatorioToken()) {
+                    abrirModalSenhaRelatorio();
+                    showTab('atendimento', save);
+                    return;
+                }
                 if (!document.getElementById('rel-data-inicio').value) {
                     selectPeriodoChip('mes', false);
                 }
@@ -1674,6 +1712,95 @@
                 updateLivePreview();
             }
         }
+
+        // Proteção do Relatório (área do dono)
+        function relatorioToken() {
+            return sessionStorage.getItem('relatorioToken') || '';
+        }
+
+        function salvarTokenRelatorio(token) {
+            sessionStorage.setItem('relatorioToken', token);
+        }
+
+        function removerTokenRelatorio() {
+            sessionStorage.removeItem('relatorioToken');
+        }
+
+        function abrirModalSenhaRelatorio() {
+            const modal = document.getElementById('modal-senha-relatorio');
+            modal.style.display = 'flex';
+            document.getElementById('senha-relatorio-input').value = '';
+            document.getElementById('senha-relatorio-confirmar').value = '';
+            document.getElementById('senha-relatorio-confirmar-grupo').style.display = 'none';
+            document.getElementById('senha-relatorio-status').style.display = 'none';
+            verificarStatusSenhaRelatorio();
+        }
+
+        function closeSenhaRelatorioModal() {
+            document.getElementById('modal-senha-relatorio').style.display = 'none';
+        }
+
+        async function verificarStatusSenhaRelatorio() {
+            try {
+                const res = await fetch(`${API_URL}/relatorio/status`);
+                const data = await res.json();
+                const label = document.getElementById('senha-relatorio-label');
+                const botao = document.getElementById('senha-relatorio-botao');
+                if (data.senhaConfigurada) {
+                    label.textContent = 'Senha do Dono:';
+                    botao.textContent = 'Acessar Relatórios';
+                    document.getElementById('senha-relatorio-confirmar-grupo').style.display = 'none';
+                } else {
+                    label.textContent = 'Defina a senha do Dono (mín. 4 caracteres):';
+                    botao.textContent = 'Configurar e Acessar';
+                    document.getElementById('senha-relatorio-confirmar-grupo').style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Erro ao verificar senha:', err);
+            }
+        }
+
+        function mostrarStatusSenhaRelatorio(mensagem, tipo) {
+            const status = document.getElementById('senha-relatorio-status');
+            status.style.display = 'block';
+            status.style.background = tipo === 'erro' ? 'rgba(220,53,69,0.12)' : 'rgba(40,167,69,0.12)';
+            status.style.color = tipo === 'erro' ? '#ff6b6b' : '#71e6a4';
+            status.style.border = `1px solid ${tipo === 'erro' ? 'rgba(220,53,69,0.4)' : 'rgba(40,167,69,0.4)'}`;
+            status.textContent = mensagem;
+        }
+
+        document.getElementById('form-senha-relatorio').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const res = await fetch(`${API_URL}/relatorio/status`);
+                const status = await res.json();
+                const senha = document.getElementById('senha-relatorio-input').value;
+                let endpoint = '/relatorio/login';
+                if (!status.senhaConfigurada) {
+                    const confirmacao = document.getElementById('senha-relatorio-confirmar').value;
+                    if (senha !== confirmacao) {
+                        mostrarStatusSenhaRelatorio('As senhas não conferem. Tente novamente.', 'erro');
+                        return;
+                    }
+                    endpoint = '/relatorio/configurar-senha';
+                }
+                const resposta = await fetch(`${API_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senha })
+                });
+                const dados = await resposta.json();
+                if (!resposta.ok) {
+                    mostrarStatusSenhaRelatorio(dados.error || 'Erro ao acessar.', 'erro');
+                    return;
+                }
+                salvarTokenRelatorio(dados.token);
+                closeSenhaRelatorioModal();
+                showTab('relatorio');
+            } catch (err) {
+                mostrarStatusSenhaRelatorio('Falha de comunicação com o servidor.', 'erro');
+            }
+        });
 
         // Live Preview do Atendimento
         function updateLivePreview() {
@@ -1901,9 +2028,15 @@
             
             try {
                 const [resComissoes, resGeral] = await Promise.all([
-                    fetch(urlComissoes),
-                    fetch(urlGeral)
+                    fetch(urlComissoes, { headers: { 'X-Relatorio-Token': relatorioToken() } }),
+                    fetch(urlGeral, { headers: { 'X-Relatorio-Token': relatorioToken() } })
                 ]);
+                
+                if (resComissoes.status === 401 || resGeral.status === 401) {
+                    removerTokenRelatorio();
+                    abrirModalSenhaRelatorio();
+                    return;
+                }
                 
                 const relatorio = await resComissoes.json();
                 const geral = await resGeral.json();

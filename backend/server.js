@@ -3,7 +3,8 @@ import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join, basename } from 'path';
 import { existsSync, readdirSync } from 'fs';
-import db, { saveDatabase, backupDatabase, backupsDir } from './database.js';
+import { createHash, randomBytes, timingSafeEqual } from 'crypto';
+import db, { saveDatabase, backupDatabase, backupsDir, getConfig, setConfig } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -181,7 +182,80 @@ app.delete('/api/atendimentos/:id', (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/api/relatorio/comissoes', (req, res) => {
+function hashSenha(senha, salt) {
+  return createHash('sha256').update(`${salt}::${senha}`).digest('hex');
+}
+
+function gerarSalt() {
+  return randomBytes(16).toString('hex');
+}
+
+function getSenhaDono() {
+  const raw = getConfig('senha_dono');
+  if (!raw) return null;
+  const [salt, hash] = raw.split(':');
+  return { salt, hash };
+}
+
+function senhaValida(senha) {
+  const armazenada = getSenhaDono();
+  if (!armazenada) return true;
+  const hash = hashSenha(senha, armazenada.salt);
+  try {
+    return timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(armazenada.hash, 'hex'));
+  } catch {
+    return false;
+  }
+}
+
+const tokensRelatorio = new Set();
+
+function criarTokenRelatorio() {
+  const token = randomBytes(32).toString('hex');
+  tokensRelatorio.add(token);
+  return token;
+}
+
+function validarTokenRelatorio(token) {
+  return token && tokensRelatorio.has(token);
+}
+
+function requerAcessoRelatorio(req, res, next) {
+  const token = req.headers['x-relatorio-token'] || req.query.token;
+  if (validarTokenRelatorio(token)) return next();
+  return res.status(401).json({ error: 'Acesso negado. Informe a senha do dono.' });
+}
+
+app.post('/api/relatorio/configurar-senha', (req, res) => {
+  const { senha } = req.body;
+  if (!senha || String(senha).length < 4) {
+    return res.status(400).json({ error: 'A senha deve ter pelo menos 4 caracteres' });
+  }
+  if (getConfig('senha_dono')) {
+    return res.status(400).json({ error: 'Senha já configurada' });
+  }
+  const salt = gerarSalt();
+  setConfig('senha_dono', `${salt}:${hashSenha(senha, salt)}`);
+  res.json({ success: true, token: criarTokenRelatorio() });
+});
+
+app.post('/api/relatorio/login', (req, res) => {
+  const { senha } = req.body;
+  if (!getConfig('senha_dono')) {
+    return res.status(400).json({ error: 'Senha ainda não configurada' });
+  }
+  if (senhaValida(senha)) {
+    res.json({ success: true, token: criarTokenRelatorio() });
+  } else {
+    res.status(401).json({ error: 'Senha incorreta' });
+  }
+});
+
+app.get('/api/relatorio/status', (req, res) => {
+  res.json({ senhaConfigurada: !!getConfig('senha_dono') });
+});
+
+app.get('/api/relatorio/comissoes', requerAcessoRelatorio, (req, res) => {
   const { data_inicio, data_fim, periodo } = req.query;
   
   let joinConditions = '';
@@ -218,7 +292,7 @@ app.get('/api/relatorio/comissoes', (req, res) => {
   res.json(relatorio);
 });
 
-app.get('/api/relatorio/geral', (req, res) => {
+app.get('/api/relatorio/geral', requerAcessoRelatorio, (req, res) => {
   const { data_inicio, data_fim } = req.query;
   
   let query = `
