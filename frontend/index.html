@@ -1727,6 +1727,20 @@
             <form id="form-editar-barbeiro">
                 <input type="hidden" id="edit-barb-id">
                 <div class="form-group">
+                    <label>Foto de Perfil:</label>
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <div id="edit-barb-avatar" class="colaborador-avatar" style="width: 64px; height: 64px;"></div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button type="button" class="btn btn-outline btn-small" id="btn-edit-trocar-foto">
+                                <i class="fas fa-camera"></i> Trocar foto
+                            </button>
+                            <button type="button" class="btn btn-danger btn-small" id="btn-edit-remover-foto" style="display: none;">
+                                <i class="fas fa-trash-alt"></i> Remover foto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="edit-barb-nome">Nome do Profissional:</label>
                     <div class="input-icon-wrapper">
                         <i class="fas fa-user"></i>
@@ -1953,6 +1967,7 @@
                 if (b) b.foto = dados.foto;
                 loadBarbeiros();
                 loadBarbeirosSelect();
+                atualizarAvatarEditModal();
                 showToast('Foto de perfil atualizada!', 'success');
             } catch (err) {
                 showToast('Falha de comunicação com o servidor.', 'erro');
@@ -2058,6 +2073,7 @@
                 if (b) b.foto = null;
                 loadBarbeiros();
                 loadBarbeirosSelect();
+                atualizarAvatarEditModal();
                 showToast('Foto removida.', 'success');
             } catch (err) {
                 showToast('Falha de comunicação com o servidor.', 'erro');
@@ -2807,15 +2823,35 @@
             }
         }
 
+        function atualizarAvatarEditModal() {
+            const id = document.getElementById('edit-barb-id').value;
+            if (!id) return;
+            const barbeiro = cachedBarbeiros.find(b => b.id == id);
+            const avatarBox = document.getElementById('edit-barb-avatar');
+            if (!barbeiro) return;
+            const indice = cachedBarbeiros.indexOf(barbeiro);
+            avatarBox.innerHTML = avatarBarbeiro(barbeiro, indice).replace(/class="colaborador-avatar"/, 'class="colaborador-avatar" style="width: 64px; height: 64px; font-size: 1rem;"');
+            document.getElementById('btn-edit-remover-foto').style.display = barbeiro.foto ? 'inline-flex' : 'none';
+        }
+
         function editBarbeiro(id, nome, comissao) {
             document.getElementById('edit-barb-id').value = id;
             document.getElementById('edit-barb-nome').value = nome;
             document.getElementById('edit-barb-comissao').value = comissao;
+            const barbeiro = cachedBarbeiros.find(b => b.id == id);
+            document.getElementById('btn-edit-trocar-foto').onclick = () => trocarFoto(id);
+            document.getElementById('btn-edit-remover-foto').onclick = () => removerFotoEdit(id);
+            atualizarAvatarEditModal();
             document.getElementById('modal-editar-barbeiro').style.display = 'flex';
         }
 
         function closeEditModal() {
             document.getElementById('modal-editar-barbeiro').style.display = 'none';
+        }
+
+        async function removerFotoEdit(id) {
+            await removerFoto(id);
+            atualizarAvatarEditModal();
         }
 
         function editServico(id, nome, valor, apenas_dono) {
