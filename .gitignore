@@ -5,4 +5,7 @@ node_modules/
 *.log
 .DS_Store
 
+# Fotos de perfil dos barbeiros (dados locais, não código)
+frontend/assets/perfil/
+
 *.zip
