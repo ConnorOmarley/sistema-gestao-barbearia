@@ -28,8 +28,25 @@ ONDE FICAM OS DADOS:
 ------------------------------------------------------------------------
 BACKUP (CÓPIA DE SEGURANÇA):
 ------------------------------------------------------------------------
-- Para fazer um backup, basta copiar a pasta inteira ou o arquivo
-  "backend/barbearia.db" para onde desejar (ex: seu e-mail, HD externo).
+- Todo o sistema fica guardado em um ÚNICO arquivo:
+  backend/barbearia.db  (barbeiros, serviços, atendimentos e senha).
+- PARA FAZER BACKUP: copie esse arquivo para outro lugar
+  (e-mail, Google Drive, HD externo, outro pen drive).
+  Guarde-o bem. Se perder ou quebrar o pen drive, basta copiar esse
+  arquivo de volta para a pasta "backend" que tudo volta a funcionar.
+- ROTINA RECOMENDADA: no fim de cada dia, copie o arquivo
+  "barbearia.db" para fora do pen drive (ex: Google Drive). Leva menos
+  de 1 minuto e protege os dados daquele dia.
+- ATENÇÃO SOBRE O GOOGLE DRIVE: o backup no Google Drive NÃO é
+  automático. Copiar o arquivo para o Drive salva apenas a cópia
+  daquele momento. Para manter o backup de um dia sempre atualizado,
+  copie "barbearia.db" de novo depois de fechar o sistema no fim do dia.
+- O sistema também faz cópias automáticas a cada 5 minutos na pasta
+  "backend/backups" (mantém as últimas 20). Isso ajuda a recuperar de
+  uma alteração errada, mas NÃO protege se o pen drive for perdido -
+  por isso o backup manual para fora é fundamental.
+- DICA: se preferir mais simples, copiar a pasta inteira do sistema
+  também serve como backup (leva também as fotos de perfil).
 
 ------------------------------------------------------------------------
 FOTO DE PERFIL DOS BARBEIROS:
