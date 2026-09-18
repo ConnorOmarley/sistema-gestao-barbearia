@@ -44,7 +44,9 @@ export function period(query) {
     const value = query[key];
     if (value === undefined) continue;
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value) || !Number.isFinite(Date.parse(value))) invalid('Período inválido. Use uma data e hora em UTC.');
-    result[key] = new Date(value).toISOString();
+    const normalized = new Date(value).toISOString();
+    if (normalized.slice(0,19) !== value.slice(0,19)) invalid('Data inexistente.');
+    result[key] = normalized;
   }
   if (result.data_inicio && result.data_fim && result.data_inicio > result.data_fim) invalid('A data inicial deve ser anterior à final.');
   return result;

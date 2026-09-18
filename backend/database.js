@@ -68,15 +68,20 @@ function backupDatabase() {
   return backupPath;
 }
 
+// Preserve the original bytes before any schema operation in this release.
+const previousVersion = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='config'").length ? getConfig('schema_version') : null;
+if (original && previousVersion !== '3') atomicWrite(join(__dirname,'barbearia-antes-migracao-v3-'+Date.now()+'.db'),original);
 db.run(readFileSync(join(__dirname, 'schema.sql'), 'utf8'));
 const addColumn = (table, column, definition) => {
   if (!db.exec('PRAGMA table_info(' + table + ')')[0].values.some(row => row[1] === column)) db.run('ALTER TABLE ' + table + ' ADD COLUMN ' + column + ' ' + definition);
 };
 addColumn('barbeiros', 'foto', 'TEXT');
 addColumn('servicos', 'comissao_fixa_pct', 'REAL');
-if (getConfig('schema_version') !== '2') {
+addColumn('atendimentos', 'metodo_pagamento', "TEXT NOT NULL DEFAULT 'dinheiro'");
+db.run('CREATE TABLE IF NOT EXISTS gastos (id INTEGER PRIMARY KEY AUTOINCREMENT, categoria TEXT NOT NULL, descricao TEXT NOT NULL, valor REAL NOT NULL, metodo_pagamento TEXT NOT NULL, data_hora TEXT NOT NULL, observacao TEXT)');
+if (!['2','3'].includes(getConfig('schema_version'))) {
   // Preserve the exact pre-migration bytes, outside the rotating backups.
-  if (original) atomicWrite(join(__dirname, 'barbearia-antes-migracao-v2-' + Date.now() + '.db'), original);
+
   db.run('PRAGMA foreign_keys = OFF');
   db.run('BEGIN');
   try {
@@ -87,12 +92,14 @@ if (getConfig('schema_version') !== '2') {
     db.run('CREATE INDEX IF NOT EXISTS idx_itens_atendimento ON atendimento_itens(atendimento_id)');
     db.run('INSERT INTO atendimento_itens (atendimento_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao) SELECT a.id, a.servico_id, a.valor_cobrado, a.valor_tinta, a.tem_pigmentacao, a.comissao_percentual, a.valor_comissao FROM atendimentos a WHERE NOT EXISTS (SELECT 1 FROM atendimento_itens i WHERE i.atendimento_id = a.id)');
     for (const [id, nome] of db.exec('SELECT id, nome FROM servicos')[0]?.values || []) {
-      if (isPigmentacao(nome)) db.run('UPDATE servicos SET comissao_fixa_pct = 0, apenas_dono = 1 WHERE id = ?', [id]);
+      if (isPigmentacao(nome)) db.run('UPDATE servicos SET comissao_fixa_pct = 0 WHERE id = ?', [id]);
     }
     db.run("INSERT OR REPLACE INTO config VALUES ('schema_version', '2')");
     db.run('COMMIT');
   } catch (error) { db.run('ROLLBACK'); throw error; }
 }
+db.run("INSERT OR REPLACE INTO config VALUES ('schema_version','3')");
+db.run('CREATE INDEX IF NOT EXISTS idx_gastos_data ON gastos(data_hora)');
 db.run('PRAGMA foreign_keys = ON');
 // Preserve legacy duplicates; reject any new duplicate.
 db.run("CREATE TRIGGER IF NOT EXISTS itens_sem_repeticao_insert BEFORE INSERT ON atendimento_itens WHEN EXISTS (SELECT 1 FROM atendimento_itens WHERE atendimento_id=NEW.atendimento_id AND servico_id=NEW.servico_id) BEGIN SELECT RAISE(ABORT, 'Servico repetido no atendimento'); END");

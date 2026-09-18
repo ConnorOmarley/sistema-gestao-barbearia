@@ -1,131 +1,110 @@
-========================================================================
-       BARBEARIA MICHAEL BARBER - SISTEMA DE GESTÃO & CAIXA PORTÁTIL
-========================================================================
+BARBEARIA MICHAEL BARBER — COMO USAR
+Versão: gestão de pagamentos, gastos e resultado financeiro
 
-Este sistema foi projetado para funcionar 100% OFFLINE (sem internet),
-diretamente no notebook ou em um PEN DRIVE portátil, sem mensalidades
-ou assinaturas recorrentes.
+1. INICIAR E ENCERRAR
+Abra iniciar_sistema.bat e aguarde a página http://localhost:3000.
+Mantenha a janela do sistema aberta enquanto usar o caixa.
+Ao terminar, pressione ENTER nessa janela para salvar e encerrar.
+Só retire o pen drive depois do encerramento. Fechar a aba do navegador
+não encerra o servidor. Se a porta estiver ocupada, feche a outra instância.
 
-------------------------------------------------------------------------
-USO DIRETO NO PEN DRIVE (PORTÁTIL / PLUG-AND-PLAY):
-------------------------------------------------------------------------
-1. Copie a pasta inteira do sistema para o seu Pen Drive.
-2. Conecte o Pen Drive em qualquer computador ou notebook com Windows.
-3. Dê 2 cliques no arquivo: "iniciar_sistema.bat"
-4. O sistema abrirá automaticamente a tela do Caixa no navegador.
+2. DONO E BARBEIROS
+O barbeiro pode registrar atendimentos e consultar o histórico público
+do dia. Não pode editar/excluir atendimentos, administrar cadastros,
+consultar relatórios financeiros, gastos ou backups.
+O dono entra pelo botão Área do Dono. No primeiro uso, configure sua
+senha; depois informe a senha existente. Ao sair, clique novamente em
+Área do Dono. A sessão é encerrada também quando o servidor reinicia.
+Não deixe a sessão do dono aberta no computador compartilhado.
 
-* Graças ao executável em "bin/node.exe", o sistema funciona em qualquer
-  computador com Windows, mesmo que nunca tenha instalado o Node.js antes!
+3. CADASTROS
+Dentro da Área do Dono, use Barbeiros para cadastrar colaboradores e
+informar o percentual de comissão. O dono recebe 100% nos seus atendimentos.
+Em Serviços, informe nome, preço e, se necessário, comissão fixa:
+campo vazio usa a taxa do barbeiro; 0% é uma taxa válida.
+Desativar um cadastro mantém seu histórico.
+Apenas o dono pode criar, editar, desativar cadastros e alterar fotos.
 
-------------------------------------------------------------------------
-ONDE FICAM OS DADOS:
-------------------------------------------------------------------------
-- Todos os atendimentos, barbeiros e serviços ficam salvos no arquivo:
-  backend/barbearia.db
-- Quando você usa o sistema pelo Pen Drive, todas as vendas são salvas
-  automaticamente dentro do próprio Pen Drive.
+4. REGISTRAR ATENDIMENTO
+No Caixa & Atendimento, selecione profissional, pagamento e serviços.
+Clique Adicionar para cada serviço. Ajuste os valores quando necessário.
+O mesmo serviço não pode ser incluído duas vezes no mesmo atendimento.
+Informe a tinta cobrada, se houver, e a observação opcional.
+Confirme o resumo e clique Confirmar Atendimento.
+Escolha Dinheiro, Cartão ou Pix. Cada atendimento usa um único método.
+Atendimentos antigos sem método informado são migrados para Dinheiro.
+O histórico público mostra somente o dia atual e não mostra comissões.
 
-------------------------------------------------------------------------
-BACKUP (CÓPIA DE SEGURANÇA):
-------------------------------------------------------------------------
-- Os dados estruturados ficam guardados em um arquivo; as fotos ficam em pasta separada:
-  backend/barbearia.db  (barbeiros, serviços, atendimentos e senha).
-- PARA FAZER BACKUP: copie esse arquivo para outro lugar
-  (e-mail, Google Drive, HD externo, outro pen drive).
-  Guarde-o bem. Se perder ou quebrar o pen drive, basta copiar esse
-  arquivo de volta para a pasta "backend" que tudo volta a funcionar.
-- ROTINA RECOMENDADA: no fim de cada dia, copie o arquivo
-  "barbearia.db" para fora do pen drive (ex: Google Drive). Leva menos
-  de 1 minuto e protege os dados daquele dia.
-- ATENÇÃO SOBRE O GOOGLE DRIVE: o backup no Google Drive NÃO é
-  automático. Copiar o arquivo para o Drive salva apenas a cópia
-  daquele momento. Para manter o backup de um dia sempre atualizado,
-  copie "barbearia.db" de novo depois de fechar o sistema no fim do dia.
-- O sistema também faz cópias automáticas a cada 5 minutos na pasta
-  "backend/backups" (mantém as últimas 20). Isso ajuda a recuperar de
-  uma alteração errada, mas NÃO protege se o pen drive for perdido -
-  por isso o backup manual para fora é fundamental.
-- DICA: se preferir mais simples, copiar a pasta inteira do sistema
-  também serve como backup (leva também as fotos de perfil).
+5. COMISSÕES, PIGMENTAÇÃO E TINTA
+Nos atendimentos do dono, serviços e tinta pertencem integralmente a ele.
+Colaboradores recebem a comissão do serviço, ou sua taxa padrão quando
+não houver taxa fixa. A tinta cobrada não entra na comissão do colaborador.
+O serviço Pigmentação mantém comissão 0% para colaboradores.
+O dono escolhe quem pode executá-lo: Serviços > Editar pigmentação >
+Apenas para o Dono. Marcado: exclusivo do dono. Desmarcado: colaboradores
+também podem fazer. A escolha permanece após reiniciar o sistema.
+Compra de tinta é um gasto separado. Nunca desconte a compra da comissão
+do atendimento. O valor de tinta cobrado do cliente é receita.
 
-------------------------------------------------------------------------
-FOTO DE PERFIL DOS BARBEIROS:
-------------------------------------------------------------------------
-- Para colocar a foto de um barbeiro, clique no círculo (avatar) dele
-  na lista de Barbeiros e escolha a foto no computador.
-- O sistema abre uma tela de ajuste: arraste para centralizar e use a
-  barrinha ou a roda do mouse para dar o zoom. Confirme para salvar.
-- Para trocar ou remover a foto, use também o botão "Editar" do barbeiro
-  (sessão "Foto de Perfil").
-- As fotos ficam guardadas na pasta "frontend/assets/perfil" do sistema.
-- O dono da barbearia aparece com a logo da barbearia no avatar.
+6. EDITAR E EXCLUIR ATENDIMENTOS
+Entre na Área do Dono > Histórico do Dono.
+Use Hoje, Semana, Mês, datas personalizadas ou Todo o período.
+Em Editar, adicione, troque ou remova serviços, ajuste valores e tinta,
+mude o pagamento e a observação. Mantenha pelo menos um serviço.
+O profissional e a data original são preservados.
+Ao confirmar, as comissões são recalculadas pelas taxas atuais dos
+cadastros. Um backup é criado ANTES de salvar. Atendimento e itens são
+gravados juntos; falha na operação não pode deixar atualização parcial.
+A exclusão também é exclusiva do dono, pede confirmação e cria backup.
+Após salvar/excluir, os históricos e relatórios são atualizados.
+Registros excluídos não têm botão Desfazer. Recuperação exige restaurar
+um backup completo, que pode substituir registros posteriores.
 
-------------------------------------------------------------------------
-COMISSÃO E PIGMENTAÇÃO:
-------------------------------------------------------------------------
-- O DONO da barbearia recebe 100% de todo serviço que ele fizer
-  (o valor cobrado + o valor da tinta, quando houver pigmentação).
-- Quando um barbeiro colaborador faz um serviço, ele recebe o percentual
-  combinado (ex: 50%) sobre o valor cobrado. O valor da TINTA vai sempre
-  para o Dono.
-- No caixa, marque "Pigmentação" (com a cor da tinta, se houver custo)
-  para registrar isso no atendimento.
+7. GASTOS
+Na Área do Dono > Gastos, clique Novo gasto.
+Informe categoria, descrição, valor positivo, data, pagamento e observação.
+Categorias: tinta, giletes, produtos, material, aluguel, energia,
+manutenção, retirada do dono e outros.
+Use Editar para corrigir um gasto e Excluir para removê-lo com confirmação.
+Use datas e categoria para filtrar; Todo o período limpa os filtros.
+O cartão da aba soma apenas os gastos filtrados.
+Gastos alteram o saldo operacional, mas não as comissões.
 
------------------------------------------------------------------------
-COMISSÃO FIXA POR SERVIÇO (LUZES, REFLEXO, NEVOU E PIGMENTAÇÃO):
------------------------------------------------------------------------
-- Alguns serviços têm uma comissão FIXA, que não depende do percentual
-  cadastrado em cada colaborador. Veja como funciona em cada caso:
-- PIGMENTAÇÃO: somente o Dono pode fazer. O serviço é cadastrado
-  automaticamente como "Apenas Dono" e comissão 0%. A tinta também fica
-  100% com o Dono. Se junto houver outro serviço, a comissão desse outro
-  serviço segue sua regra normal.
-- LUZES / REFLEXO / NEVOU: são serviços de coloração cuja comissão é
-  SEMPRE 35% para o colaborador, independentemente do % cadastrado no
-  barbeiro. Ex: se o serviço custa R$ 100,00, o colaborador ganha
-  R$ 35,00 fixos e a barbearia fica com R$ 65,00.
-- Como cadastrar: ao criar (ou editar) um serviço, preencha o campo
-  "Comissão p/ Colaborador (%)":
-  * Deixe VAZIO  -> usa o percentual padrão de cada barbeiro.
-  * Digite 0     -> o valor vai 100% para a barbearia (ex: Pigmentação).
-  * Digite 35    -> o colaborador ganha 35% fixos (ex: Luzes/Reflexo/Nevou).
-- O DONO sempre ganha 100% de tudo que ele mesmo atende, mesmo quando o
-  serviço tem comissão fixa. Essa regra nunca muda.
+8. RELATÓRIOS FINANCEIROS
+Entre na Área do Dono > Relatórios Financeiros e selecione o período.
+Os primeiros cartões mostram:
+- Receitas de serviços.
+- Tinta cobrada.
+- Total recebido: serviços + tinta cobrada.
+- Gastos totais.
+- Saldo operacional: serviços + tinta cobrada - gastos.
+- Dinheiro recebido, Cartão recebido e Pix recebido.
+Os três métodos mostram FATURAMENTO recebido, antes das despesas.
+Não são lucro líquido por método. A soma dos métodos deve coincidir com
+o Total recebido. Comissões aparecem separadamente e não são descontadas
+da fórmula de saldo operacional prevista neste sistema.
+Abaixo há gastos por categoria, comissões e participação dos profissionais.
+Os limites de período respeitam o dia local, incluindo sua hora final.
+Na troca de método de um atendimento, o valor sai do método anterior e
+entra no novo método. Compra de tinta aparece como despesa da categoria.
 
-------------------------------------------------------------------------
-PROTEÇÃO DA ABA RELATÓRIOS (ÁREA DO DONO):
-------------------------------------------------------------------------
-- A aba "Relatórios" é protegida por senha do Dono. Os barbeiros usam o
-  sistema normalmente (atendimentos, histórico, cadastros), mas só quem
-  tem a senha do Dono consegue ver os relatórios financeiros.
-- PRIMEIRO USO: ao clicar em "Relatórios", o sistema pede para definir
-  a senha do Dono (mínimo 4 caracteres). Defina e confirme.
-- A sessão permanece até sair da Área do Dono, fechar a sessão do navegador ou reiniciar o servidor.
-- ESQUECEU A SENHA? Procure o responsável técnico. Com o sistema parado,
-  faça backup e remova somente a chave senha_dono da tabela config usando
-  uma ferramenta SQLite. Não apague o banco nem os atendimentos para isso.
-  Limpar atendimentos preserva a senha. Após o reset, defina a nova senha.
+9. BACKUPS E RESTAURAÇÃO
+Na Área do Dono > Backups, clique Criar backup agora e depois Baixar.
+Backups automáticos são criados a cada 5 minutos, mantendo os últimos 20.
+A edição/exclusão de atendimento também cria backup antes da alteração.
+O banco fica em backend/barbearia.db. Fotos ficam em frontend/assets/perfil.
+Arquivos barbearia-antes-migracao-*.db preservam o banco antes da migração
+e ficam fora da rotação de backups.
+Para segurança, após encerrar o sistema copie a pasta inteira para outro
+dispositivo. Backup no mesmo pen drive não protege contra perda física.
+Para restaurar: encerre o sistema; guarde uma cópia do banco atual;
+copie o backup desejado para backend/barbearia.db; inicie novamente.
+A restauração recupera TODOS os registros e a senha daquele momento.
+Sincronização do OneDrive não substitui esse procedimento.
 
-EXCLUIR ATENDIMENTO:
-- No Histórico, clique em Excluir e confira os dados antes de confirmar.
-- Todos os itens, tinta e comissões desse atendimento saem dos relatórios.
-- Registros do dia podem ser excluídos pelo caixa; para dias anteriores,
-  use o Histórico do Dono após entrar com a senha.
-- A exclusão não pode ser desfeita pela tela.
-
-ENCERRAR E TRANSPORTAR:
-- Pressione ENTER na janela do iniciador e aguarde "Servidor encerrado".
-- Depois disso, remova o pen drive com segurança.
-- Leve a pasta inteira, incluindo bin/node.exe e backend/node_modules.
-- Preparar dependências pela primeira vez pode exigir internet; o uso do
-  pacote completo é offline. As fotos ficam em frontend/assets/perfil.
-
-RELATÓRIOS:
-- Faturamento total inclui serviços e tinta.
-- Comissões dos colaboradores não incluem os atendimentos próprios do dono.
-- Parte da barbearia = serviços + tinta - todas as comissões.
-- Total destinado ao dono = seus atendimentos + parte da barbearia.
-- Esses valores são anteriores às despesas; não representam lucro líquido.
-- Colaboradores inativos continuam nos relatórios dos períodos em que atenderam.
-
-Consulte CORRECOES.md para detalhes técnicos e testes.
+10. VALIDAÇÃO
+Os testes automatizados usam bancos isolados em backend/.testdata.
+Execute, na pasta backend: npm test.
+Eles verificam regras de comissão, pagamentos, gastos, filtros, edição,
+backup anterior, permissões, migração, reinício e integridade do banco.
+Para testar visualmente, use uma cópia do sistema e dados fictícios.

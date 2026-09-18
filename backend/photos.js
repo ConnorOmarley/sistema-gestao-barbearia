@@ -27,7 +27,7 @@ app.post('/api/barbeiros/:id/foto', (req, res) => {
   const caminho = join(perfilDir, nomeArquivo);
   writeFileSync(caminho, dados);
 
-  change('UPDATE barbeiros SET foto = ? WHERE id = ?', [`assets/perfil/${nomeArquivo}`, barbeiro.id]);   change('UPDATE barbeiros SET foto = NULL WHERE id = ?', [barbeiro.id]); 
+  change('UPDATE barbeiros SET foto = ? WHERE id = ?', [`assets/perfil/${nomeArquivo}`, barbeiro.id]);
   if (barbeiro.foto) {
     const antiga = join(perfilDir, basename(barbeiro.foto));
     if (existsSync(antiga) && antiga !== caminho) {

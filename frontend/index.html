@@ -1330,6 +1330,7 @@
             font-weight: 600;
         }
     </style>
+    <link rel="stylesheet" href="owner-ui.css">
 </head>
 <body>
 
@@ -1408,13 +1409,21 @@
                         </div>
                         <form id="form-atendimento">
                             <div class="form-grid-2">
-                                <div class="form-group">
-                                    <label for="atend-barbeiro">Profissional / Barbeiro:</label>
+                            <div class="form-group">
+                                <label for="atend-barbeiro">Profissional / Barbeiro:</label>
                                     <div class="input-icon-wrapper">
                                         <i class="fas fa-user-tie"></i>
                                         <select id="atend-barbeiro" required></select>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="atend-pagamento">Método de pagamento:</label>
+                                <select id="atend-pagamento" required>
+                                    <option value="dinheiro">Dinheiro</option>
+                                    <option value="cartao">Cartão</option>
+                                    <option value="pix">Pix</option>
+                                </select>
                             </div>
 
                             <div class="form-group">
@@ -1601,8 +1610,8 @@
                                 <th>Profissional</th>
                                 <th>Serviço</th>
                                 <th>Total com tinta</th>
+                                <th>Pagamento</th>
                                 <th>Observação</th>
-                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1635,7 +1644,7 @@
                                 <th>Total com tinta</th>
                                 <th>Comissão efetiva %</th>
                                 <th>Valor Comissão</th>
-                                <th>Observação</th>
+                                <th>Pagamento</th><th>Observação</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -2024,7 +2033,7 @@
             try {
                 const res = await fetch(`${API_URL}/barbeiros/${id}/foto`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-Relatorio-Token': relatorioToken() },
                     body: JSON.stringify({ foto: dataUrl })
                 });
                 const dados = await res.json();
@@ -2132,7 +2141,7 @@
 
         async function removerFoto(id) {
             try {
-                const res = await fetch(`${API_URL}/barbeiros/${id}/foto`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/barbeiros/${id}/foto`, { method: 'DELETE', headers: {'X-Relatorio-Token': relatorioToken()} });
                 const dados = await res.json();
                 if (!res.ok) {
                     showToast(dados.error || 'Erro ao remover a foto.', 'erro');
@@ -2184,6 +2193,11 @@
 
         // Navegação em Abas
         function showTab(tabName, save = true) {
+            if (['barbeiros','servicos','relatorio','historico-dono','gastos','backups'].includes(tabName) && !relatorioToken()) {
+                abrirModalSenhaRelatorio(); showTab('atendimento', false); return;
+            }
+            if (tabName === 'gastos' && typeof loadGastos === 'function') loadGastos();
+            if (tabName === 'backups' && typeof loadBackups === 'function') loadBackups();
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
             
@@ -2238,6 +2252,9 @@
 
         function atualizarUIacessoDono() {
             const temToken = !!relatorioToken();
+            document.querySelectorAll('.nav-tab').forEach(button => {
+                if (['barbeiros','servicos','gastos','backups'].some(tab => button.getAttribute('onclick')?.includes("'"+tab+"'"))) button.style.display = temToken ? '' : 'none';
+            });
             const navRelatorio = document.getElementById('nav-tab-relatorio');
             const navHistoricoDono = document.getElementById('nav-tab-historico-dono');
             const badgeDono = document.getElementById('btn-dono-badge');
@@ -2274,6 +2291,8 @@
 
         function removerTokenRelatorio() {
             sessionStorage.removeItem('relatorioToken');
+            if (typeof limparAreaDono === 'function') limparAreaDono();
+            showTab('atendimento', false);
             for (const selector of ['#stats-geral', '#stats-colaboradores', '#table-relatorio-detalhado tbody', '#table-historico-dono tbody']) document.querySelector(selector).replaceChildren();
             const canvas = document.getElementById('chart-participacao');
             canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
@@ -2340,7 +2359,7 @@
                 }
                 const resposta = await fetch(`${API_URL}${endpoint}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-Relatorio-Token': relatorioToken() },
                     body: JSON.stringify({ senha })
                 });
                 const dados = await resposta.json();
@@ -2676,7 +2695,10 @@
                 return;
             }
             try {
-                const url = `${API_URL}/relatorio/atendimentos?data_inicio=${histDonoInicio}&data_fim=${histDonoFim}`;
+                const query = new URLSearchParams();
+                if(histDonoInicio)query.set('data_inicio',histDonoInicio);
+                if(histDonoFim)query.set('data_fim',histDonoFim);
+                const url = API_URL+'/relatorio/atendimentos?'+query;
                 const res = await fetch(url, { headers: { 'X-Relatorio-Token': tokenSolicitado } });
                 if (tokenSolicitado !== relatorioToken()) return;
                 if (res.status === 401) { removerTokenRelatorio(); abrirModalSenhaRelatorio(); return; }
@@ -2685,14 +2707,14 @@
                 if (tokenSolicitado !== relatorioToken()) return;
                 renderLinhasHistorico(atendimentos, document.querySelector('#table-historico-dono tbody'), 'Nenhum atendimento registrado no período.');
             } catch (err) {
-                console.error('Erro ao carregar histórico do dono:', err);
+                showToast('Não foi possível carregar o histórico do dono.', 'error');
             }
         }
 
         function renderLinhasHistorico(atendimentos, tbody, msgVazia) {
             const owner = tbody.closest('table').id === 'table-historico-dono';
             if (atendimentos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${owner ? 8 : 6}" style="text-align:center; padding: 30px; color: var(--text-muted);">${msgVazia}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${owner ? 9 : 6}" style="text-align:center; padding: 30px; color: var(--text-muted);">${msgVazia}</td></tr>`;
                 return;
             }
 
@@ -2724,15 +2746,14 @@
                     <td style="font-weight:700;">R$ ${(Number(a.valor_cobrado) + Number(a.valor_tinta || 0)).toFixed(2)}</td>
                     ${owner ? '<td><span class="badge badge-gold">' + Number(a.comissao_percentual).toFixed(1) + '%</span></td>' : ''}
                     ${owner ? '<td style="color: var(--emerald); font-weight:700;">R$ ' + Number(a.valor_comissao).toFixed(2) + '</td>' : ''}
+                    <td>${escapeHtml(({dinheiro:'Dinheiro',cartao:'Cartão',pix:'Pix'})[a.metodo_pagamento] || a.metodo_pagamento || 'Dinheiro')}</td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(a.observacao || '-')}</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-small" data-excluir-atendimento="${index}" title="Excluir este atendimento">
-                            <i class="fas fa-trash" aria-hidden="true"></i> Excluir
-                        </button>
-                    </td>
+                    ${owner ? '<td><button type="button" class="btn btn-outline btn-small" data-editar-atendimento="'+index+'">Editar</button> <button type="button" class="btn btn-danger btn-small" data-excluir-atendimento="'+index+'">Excluir</button></td>' : ''}
+
                 </tr>
             `;
             }).join('');
+            tbody.querySelectorAll('[data-editar-atendimento]').forEach(button => button.addEventListener('click',()=>abrirEdicaoAtendimento(atendimentos[Number(button.dataset.editarAtendimento)])));
             tbody.querySelectorAll('[data-excluir-atendimento]').forEach(botao => {
                 botao.addEventListener('click', () => {
                     excluirAtendimento(atendimentos[Number(botao.dataset.excluirAtendimento)], botao);
@@ -2801,6 +2822,7 @@
                     return;
                 }
                 
+                if (!resComissoes.ok || !resGeral.ok) throw new Error('Não foi possível carregar o relatório. Verifique as datas.');
                 const relatorio = await resComissoes.json();
                 const geral = await resGeral.json();
                 if (tokenSolicitado !== relatorioToken()) return;
@@ -2844,6 +2866,7 @@
                     </div>
                 `;
                 
+                renderFinanceiro(geral);
                 // Renderizar Cards de Colaboradores
                 const containerColaboradores = document.getElementById('stats-colaboradores');
                 containerColaboradores.innerHTML = relatorio.map(r => `
@@ -2904,14 +2927,14 @@
                 
                 renderChart(relatorio);
             } catch (err) {
-                console.error('Erro ao carregar relatório:', err);
+                showToast(err.message || 'Erro ao carregar relatório.', 'error');
             }
         }
         
         // Gráfico Donut Moderno
         function renderChart(data) {
             const canvas = document.getElementById('chart-participacao');
-            if (!canvas) return;
+            if (!canvas || canvas.offsetWidth < 80) return;
             const ctx = canvas.getContext('2d');
             
             canvas.width = canvas.offsetWidth;
@@ -3025,7 +3048,7 @@
             try {
                 const res = await fetch(`${API_URL}/atendimentos`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-Relatorio-Token': relatorioToken() },
                     body: JSON.stringify({
                         barbeiro_id: parseInt(barbeiro_id),
                         itens: itensAtendimento.map(item => ({
@@ -3033,6 +3056,7 @@
                             valor_cobrado: item.valor
                         })),
                         observacao,
+                        metodo_pagamento: document.getElementById('atend-pagamento').value,
                         valor_tinta,
                         tem_pigmentacao: (pigmentacao || valor_tinta > 0) ? 1 : 0
                     })
@@ -3063,7 +3087,7 @@
             try {
                 const res = await fetch(`${API_URL}/barbeiros`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-Relatorio-Token': relatorioToken() },
                     body: JSON.stringify({ nome, comissao_percentual: parseFloat(comissao) })
                 });
                 
@@ -3091,7 +3115,7 @@
             try {
                 const res = await fetch(`${API_URL}/servicos`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'X-Relatorio-Token': relatorioToken() },
                     body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono, comissao_fixa_pct })
                 });
                 
@@ -3119,7 +3143,7 @@
         async function deleteServico(id) {
             if (cachedServicos.find(s => s.id === id)?.apenas_dono) { showToast("Serviços exclusivos do dono não podem ser excluídos.", "error"); return; }
             if (confirm('Deseja realmente desativar este serviço?')) {
-                if (!await salvarAlteracao(`${API_URL}/servicos/${id}`, { method: 'DELETE' })) return;
+                if (!await salvarAlteracao(`${API_URL}/servicos/${id}`, { method: 'DELETE', headers: { 'X-Relatorio-Token': relatorioToken() } })) return;
                 showToast('Serviço desativado.', 'success');
                 loadServicos();
             }
@@ -3158,6 +3182,7 @@
         }
 
         function editServico(id, nome, valor, apenas_dono, comissao_fixa_pct) {
+            if (!relatorioToken()) { abrirModalSenhaRelatorio(); return; }
             document.getElementById('edit-serv-id').value = id;
             document.getElementById('edit-serv-nome').value = nome;
             document.getElementById('edit-serv-valor').value = valor;
@@ -3178,7 +3203,7 @@
             
             if (!await salvarAlteracao(`${API_URL}/barbeiros/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-Relatorio-Token': relatorioToken() },
                 body: JSON.stringify({ nome, comissao_percentual: parseFloat(comissao) })
             })) return;
             
@@ -3198,7 +3223,7 @@
             
             if (!await salvarAlteracao(`${API_URL}/servicos/${id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-Relatorio-Token': relatorioToken() },
                 body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono, comissao_fixa_pct })
             })) return;
             
@@ -3213,5 +3238,6 @@
         showTab(savedTab, false);
         atualizarUIacessoDono();
     </script>
+    <script src="owner-ui.js"></script>
 </body>
 </html>

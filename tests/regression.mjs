@@ -9,7 +9,8 @@ import initSqlJs from '../backend/node_modules/sql.js/dist/sql-wasm.js';
 import { tmpdir } from 'node:os';
 
 const root=dirname(dirname(fileURLToPath(import.meta.url)));
-const tempRoot=tmpdir();
+const tempRoot=join(root,'backend','.testdata');
+mkdirSync(tempRoot,{recursive:true});
 const dir=mkdtempSync(join(tempRoot,'regression-'));
 for(const f of ['server.js','database.js','rules.js','photos.js','schema.sql'])copyFileSync(join(root,'backend',f),join(dir,f));
 const SQL=await initSqlJs();
@@ -29,6 +30,7 @@ async function start(){
 }
 async function stop(){if(!child?.connected)return;await new Promise(resolve=>{child.once('exit',resolve);child.send('shutdown')})}
 async function api(method,path,body,auth=undefined,expected=200){
+ if ((path.startsWith('/servicos') || path.startsWith('/barbeiros')) && method !== 'GET' && auth === undefined) auth=token;
  const res=await fetch('http://127.0.0.1:'+port+'/api'+path,{method,headers:{'Content-Type':'application/json',...(auth?{'X-Relatorio-Token':auth}:{})},body:body===undefined?undefined:JSON.stringify(body)});
  const data=await res.json();assert.equal(res.status,expected,method+' '+path+' '+JSON.stringify(data));return data;
 }
@@ -58,6 +60,16 @@ try{
    await api('POST','/backup',{},undefined,401);await api('DELETE','/atendimentos',{},undefined,401);
    assert.equal((await api('GET','/atendimentos')).length,0);
  });
+
+ await check('todos os cadastros, fotos, gastos e mutações de atendimento exigem dono',async()=>{
+   for(const [method,path,body] of [
+    ['POST','/barbeiros',{nome:'Bloqueado',comissao_percentual:50}],['PUT','/barbeiros/1',{nome:'Bloqueado'}],['DELETE','/barbeiros/2'],
+    ['POST','/barbeiros/1/foto',{}],['DELETE','/barbeiros/1/foto'],
+    ['POST','/servicos',{nome:'Bloqueado',valor:1}],['PUT','/servicos/1',{apenas_dono:false}],['DELETE','/servicos/1'],
+    ['GET','/gastos'],['POST','/gastos',{}],['PUT','/gastos/1',{}],['DELETE','/gastos/1'],
+    ['PUT','/atendimentos/1',{}],['DELETE','/atendimentos/1']
+   ])await api(method,path,body,'',401);
+ });
  const b=await api('POST','/barbeiros',{nome:"D'Ávila <img src=x onerror=alert(1)>",comissao_percentual:50});
  const corte=await api('POST','/servicos',{nome:'Corte teste',valor:100});
  const fixo=await api('POST','/servicos',{nome:'Luzes',valor:100,comissao_fixa_pct:35});
@@ -68,13 +80,27 @@ try{
    assert.equal((await atendimento(1,fixo.id)).valor_comissao,120);
    assert.equal((await atendimento(b.id,corte.id)).valor_comissao,50);
    assert.equal((await atendimento(b.id,fixo.id)).valor_comissao,35);
-   assert.equal((await atendimento(b.id,pigmento.id)).valor_comissao,0);
+   assert.equal((await atendimento(1,pigmento.id)).valor_comissao,120);
    assert.equal(pigmento.apenas_dono,1);assert.equal(pigmento.comissao_fixa_pct,0);
    await api('POST','/atendimentos',{barbeiro_id:b.id,itens:[{servico_id:pigmento.id,valor_cobrado:100}]},undefined,400);
  });
  await check('formato antigo soma tinta somente uma vez',async()=>{
    const a=await api('POST','/atendimentos',{barbeiro_id:1,servico_id:corte.id,valor_cobrado:100,valor_tinta:20});
    assert.equal(a.valor_tinta,20);assert.equal(a.valor_comissao,120);assert.equal(a.itens.length,1);
+ });
+ await check('dono escolhe exclusividade da pigmentação e escolha persiste',async()=>{
+   await api('PUT','/servicos/'+pigmento.id,{apenas_dono:false},'',401);
+   await api('POST','/servicos',{nome:'Pigmentação sem autorização',valor:10},'',401);
+   const livre=await api('PUT','/servicos/'+pigmento.id,{apenas_dono:false,comissao_fixa_pct:70},token);
+   assert.equal(livre.apenas_dono,0);assert.equal(livre.comissao_fixa_pct,0);
+   assert.equal((await atendimento(b.id,pigmento.id)).valor_comissao,0);
+   assert.equal((await api('PUT','/servicos/'+pigmento.id,{valor:90},token)).apenas_dono,0);
+   await stop();await start();
+   token=(await api('POST','/relatorio/login',{senha:'teste123'})).token;
+   assert.equal((await api('GET','/servicos')).find(s=>s.id===pigmento.id).apenas_dono,0);
+   await api('PUT','/servicos/'+pigmento.id,{apenas_dono:true},token);
+   await api('POST','/atendimentos',{barbeiro_id:b.id,itens:[{servico_id:pigmento.id,valor_cobrado:100}]},undefined,400);
+   assert.equal((await atendimento(1,pigmento.id)).valor_comissao,120);
  });
  await check('duplicatas numéricas/textuais e exclusivo recusados sem lançamento parcial',async()=>{
    const before=await api('GET','/relatorio/geral',undefined,token);
@@ -105,10 +131,10 @@ try{
    const before=await api('GET','/relatorio/geral',undefined,token);
    const per=await api('GET','/relatorio/comissoes',undefined,token);
    const a=await atendimento(b.id,corte.id,{itens:[{servico_id:corte.id,valor_cobrado:100},{servico_id:fixo.id,valor_cobrado:100}]});
-   await api('DELETE','/atendimentos/'+a.id);
+   await api('DELETE','/atendimentos/'+a.id,undefined,token);
    assert.deepEqual(await api('GET','/relatorio/geral',undefined,token),before);
    assert.deepEqual(await api('GET','/relatorio/comissoes',undefined,token),per);
-   await api('DELETE','/atendimentos/'+a.id,undefined,undefined,404);
+   await api('DELETE','/atendimentos/'+a.id,undefined,token,404);
  });
  await check('histórico público limitado ao dia e sem comissões; antigas só dono exclui',async()=>{
    const rows=await api('GET','/atendimentos?data_inicio=2000-01-01T00:00:00.000Z');
@@ -116,6 +142,52 @@ try{
    await api('DELETE','/atendimentos/2',undefined,undefined,401);
    await api('DELETE','/atendimentos/2',undefined,token);
  });
+
+ await check('recebimentos por método, gastos, categorias e saldo conciliam',async()=>{
+   const initial=await api('GET','/relatorio/geral',undefined,token);
+   const created=[];
+   for(const [method,value] of [['dinheiro',31],['pix',42],['cartao',53]])created.push(await atendimento(b.id,corte.id,{itens:[{servico_id:corte.id,valor_cobrado:value}],valor_tinta:4,metodo_pagamento:method}));
+   await api('POST','/atendimentos',{barbeiro_id:b.id,itens:[{servico_id:corte.id,valor_cobrado:10}],metodo_pagamento:'cheque'},'',400);
+   const date=new Date().toISOString();
+   const gasto=await api('POST','/gastos',{categoria:'tinta',descricao:'Tinta <teste> & "aspas"',valor:21.50,metodo_pagamento:'pix',data_hora:date,observacao:'Observação <script>'},token);
+   const g=await api('GET','/relatorio/geral',undefined,token);
+   assert.equal(g.total_recebido,Math.round((initial.total_recebido+138)*100)/100);
+   assert.equal(g.total_gastos,initial.total_gastos+21.5);
+   assert.equal(g.saldo_operacional,Math.round((g.total_recebido-g.total_gastos)*100)/100);
+   for(const [method,amount] of [['dinheiro',35],['pix',46],['cartao',57]])assert.equal(g.pagamentos.find(p=>p.metodo_pagamento===method).total,Math.round(((initial.pagamentos.find(p=>p.metodo_pagamento===method)?.total||0)+amount)*100)/100);
+   assert.equal(g.gastos_por_categoria.find(x=>x.categoria==='tinta').total,21.5);
+   const edited=await api('PUT','/gastos/'+gasto.id,{valor:25,metodo_pagamento:'cartao'},token);assert.equal(edited.observacao,'Observação <script>');
+   assert.equal((await api('GET','/gastos?categoria=tinta',undefined,token)).length,1);
+   assert.equal((await api('GET','/gastos?categoria=energia',undefined,token)).length,0);
+   assert.equal((await api('GET','/gastos?data_inicio=2000-01-01T00:00:00.000Z&data_fim=2000-12-31T23:59:59.999Z',undefined,token)).length,0);
+   for(const bad of [{valor:-1},{valor:0},{data_hora:'2026-02-30T12:00:00.000Z'},{categoria:'inválida'},{metodo_pagamento:'cheque'},{observacao:{}}])await api('PUT','/gastos/'+gasto.id,bad,token,400);
+   await api('GET','/gastos?data_inicio=2026-09-19T00:00:00.000Z&data_fim=2026-09-18T00:00:00.000Z',undefined,token,400);
+   const beforeRestart=await api('GET','/gastos',undefined,token);
+   await stop();await start();token=(await api('POST','/relatorio/login',{senha:'teste123'})).token;
+   assert.deepEqual(await api('GET','/gastos',undefined,token),beforeRestart);
+   assert.equal((await api('GET','/relatorio/geral',undefined,token)).total_gastos,25);
+   const commissions=await api('GET','/relatorio/comissoes',undefined,token);
+   await api('DELETE','/gastos/'+gasto.id,undefined,token);
+   assert.deepEqual(await api('GET','/relatorio/comissoes',undefined,token),commissions);
+   await api('DELETE','/gastos/'+gasto.id,undefined,token,404);
+ });
+ await check('edição atômica, serviços, backup anterior e pagamentos atualizados',async()=>{
+   const a=await atendimento(b.id,corte.id,{metodo_pagamento:'dinheiro'});
+   await api('DELETE','/atendimentos/'+a.id,undefined,'',401);
+   const before=await api('GET','/relatorio/geral',undefined,token);
+   for(const itens of [[],[null],[{servico_id:corte.id,valor_cobrado:10},{servico_id:corte.id,valor_cobrado:20}],[{servico_id:corte.id,valor_cobrado:-1}]])await api('PUT','/atendimentos/'+a.id,{itens},token,400);
+   assert.deepEqual(await api('GET','/relatorio/geral',undefined,token),before);
+   const response=await api('PUT','/atendimentos/'+a.id,{itens:[{servico_id:fixo.id,valor_cobrado:80,valor_tinta:10},{servico_id:corte.id,valor_cobrado:30}],metodo_pagamento:'pix',observacao:'Edição <teste>'},token);
+   assert(response.backup);
+   const backup=new SQL.Database(readFileSync(join(dir,'backups',response.backup)));
+   assert.equal(backup.exec('SELECT valor_cobrado FROM atendimentos WHERE id='+a.id)[0].values[0][0],100);backup.close();
+   const row=(await api('GET','/relatorio/atendimentos',undefined,token)).find(x=>x.id===a.id);
+   assert.equal(row.valor_comissao,43);assert.equal(row.valor_tinta,10);assert.equal(row.valor_cobrado,110);assert.equal(row.metodo_pagamento,'pix');assert.equal(row.itens.length,2);assert.equal(row.observacao,'Edição <teste>');
+   await api('PUT','/atendimentos/'+a.id,{itens:[{servico_id:corte.id,valor_cobrado:60}]},token);
+   const removed=(await api('GET','/relatorio/atendimentos',undefined,token)).find(x=>x.id===a.id);assert.equal(removed.itens.length,1);assert.equal(removed.valor_comissao,30);
+   await api('DELETE','/atendimentos/'+a.id,undefined,token);
+ });
+
  await check('colaborador inativo mantém histórico mas não pode atender',async()=>{
    const before=await api('GET','/relatorio/geral',undefined,token);
    await api('DELETE','/barbeiros/'+b.id);
@@ -176,6 +248,7 @@ try{
  assert.equal(result.status,0,result.stdout+result.stderr);console.log(result.stdout.trim());count+=5;
  const html=readFileSync(join(root,'frontend','index.html'),'utf8');
  for(const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
+ new vm.Script(readFileSync(join(root,'frontend','owner-ui.js'),'utf8'));
  const ctx={};vm.createContext(ctx);vm.runInContext(readFileSync(join(root,'frontend','ui-helpers.js'),'utf8'),ctx);
  assert.equal(ctx.escapeHtml("<img onerror='x'>"),'&lt;img onerror=&#39;x&#39;&gt;');assert.equal(ctx.safePhoto('https://evil.example/x'),'assets/logo.png');
  count++;console.log('PASS sintaxe da interface, escape de texto e fotos locais');

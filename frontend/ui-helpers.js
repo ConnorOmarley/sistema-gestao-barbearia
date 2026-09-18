@@ -17,7 +17,8 @@ function editServicoPorId(id) {
 }
 async function salvarAlteracao(url, options) {
     try {
-        const res = await fetch(url, options);
+        const res = await fetch(url, {...options, headers:{...options.headers,'X-Relatorio-Token':relatorioToken()}});
+        if (res.status===401) { removerTokenRelatorio(); abrirModalSenhaRelatorio(); }
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             showToast(data.error || 'Não foi possível salvar a alteração.', 'error');
