@@ -87,7 +87,7 @@ if (getConfig('schema_version') !== '2') {
     db.run('CREATE INDEX IF NOT EXISTS idx_itens_atendimento ON atendimento_itens(atendimento_id)');
     db.run('INSERT INTO atendimento_itens (atendimento_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao) SELECT a.id, a.servico_id, a.valor_cobrado, a.valor_tinta, a.tem_pigmentacao, a.comissao_percentual, a.valor_comissao FROM atendimentos a WHERE NOT EXISTS (SELECT 1 FROM atendimento_itens i WHERE i.atendimento_id = a.id)');
     for (const [id, nome] of db.exec('SELECT id, nome FROM servicos')[0]?.values || []) {
-      if (isPigmentacao(nome)) db.run('UPDATE servicos SET comissao_fixa_pct = 0, apenas_dono = 0 WHERE id = ?', [id]);
+      if (isPigmentacao(nome)) db.run('UPDATE servicos SET comissao_fixa_pct = 0, apenas_dono = 1 WHERE id = ?', [id]);
     }
     db.run("INSERT OR REPLACE INTO config VALUES ('schema_version', '2')");
     db.run('COMMIT');

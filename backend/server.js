@@ -98,7 +98,7 @@ function serviceFields(body, previous = {}) {
   const raw = body.comissao_fixa_pct === undefined ? previous.comissao_fixa_pct : body.comissao_fixa_pct;
   return {
     nome, valor,
-    apenas_dono: pigmentacao ? 0 : flag(body.apenas_dono === undefined ? previous.apenas_dono : body.apenas_dono),
+    apenas_dono: pigmentacao ? 1 : flag(body.apenas_dono === undefined ? previous.apenas_dono : body.apenas_dono),
     comissao_fixa_pct: pigmentacao ? 0 : (raw === undefined || raw === null || raw === '' ? null : percent(raw))
   };
 }

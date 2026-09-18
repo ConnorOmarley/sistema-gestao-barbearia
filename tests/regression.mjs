@@ -6,10 +6,10 @@ import {fork,spawnSync} from 'node:child_process';
 import {createServer} from 'node:net';
 import vm from 'node:vm';
 import initSqlJs from '../backend/node_modules/sql.js/dist/sql-wasm.js';
+import { tmpdir } from 'node:os';
 
 const root=dirname(dirname(fileURLToPath(import.meta.url)));
-const tempRoot=join(root,'backend','.testdata');
-mkdirSync(tempRoot,{recursive:true});
+const tempRoot=tmpdir();
 const dir=mkdtempSync(join(tempRoot,'regression-'));
 for(const f of ['server.js','database.js','rules.js','photos.js','schema.sql'])copyFileSync(join(root,'backend',f),join(dir,f));
 const SQL=await initSqlJs();
@@ -38,7 +38,7 @@ try{
  await start();
  await check('migração preserva histórico, corrige pigmentações e completa atendimento sem itens',async()=>{
    const services=await api('GET','/servicos');
-   for(const s of services.filter(s=>s.id===2||s.id===3)){assert.equal(s.apenas_dono,0);assert.equal(s.comissao_fixa_pct,0)}
+   for(const s of services.filter(s=>s.id===2||s.id===3)){assert.equal(s.apenas_dono,1);assert.equal(s.comissao_fixa_pct,0)}
    const backups=readdirSync(dir).filter(f=>f.startsWith('barbearia-antes-migracao'));
    assert.equal(backups.length,1);assert.deepEqual(readFileSync(join(dir,backups[0])),Buffer.from(original));
  });
@@ -69,7 +69,8 @@ try{
    assert.equal((await atendimento(b.id,corte.id)).valor_comissao,50);
    assert.equal((await atendimento(b.id,fixo.id)).valor_comissao,35);
    assert.equal((await atendimento(b.id,pigmento.id)).valor_comissao,0);
-   assert.equal(pigmento.apenas_dono,0);assert.equal(pigmento.comissao_fixa_pct,0);
+   assert.equal(pigmento.apenas_dono,1);assert.equal(pigmento.comissao_fixa_pct,0);
+   await api('POST','/atendimentos',{barbeiro_id:b.id,itens:[{servico_id:pigmento.id,valor_cobrado:100}]},undefined,400);
  });
  await check('formato antigo soma tinta somente uma vez',async()=>{
    const a=await api('POST','/atendimentos',{barbeiro_id:1,servico_id:corte.id,valor_cobrado:100,valor_tinta:20});

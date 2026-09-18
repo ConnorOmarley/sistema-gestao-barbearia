@@ -16,7 +16,7 @@ Sistema completo de gestão e caixa para barbearias. 100% **offline**, roda dire
 ## ✨ Funcionalidades
 
 - 💈 **Caixa & Atendimento** — registro de serviços com cálculo automático de comissão por barbeiro
-- 🎨 **Pigmentação** — qualquer barbeiro pode fazer, mas o lucro da tinta vai 100% para o dono (não comissionado)
+- 🎨 **Pigmentação** — somente o dono pode fazer; o serviço tem comissão 0%
 - 📊 **Relatórios financeiros** — comissões e faturamento por período, protegidos por senha (Área do Dono)
 - 👑 **Área do Dono** — aba de relatórios oculta no menu; aparece apenas após autenticação com senha
 - ✂️ **Gestão de serviços** — cadastro, edição e serviços exclusivos do dono
@@ -108,7 +108,7 @@ dono: valor_comissao = valor_cobrado + valor_tinta
 Regras:
 - Dono: 100% do valor cobrado + tinta
 - Colaborador: percentual do serviço (quando definido) ou do cadastro, somente sobre o valor cobrado
-- Pigmentação: o lucro da tinta vai inteiro para o dono
+- Pigmentação: somente o dono pode fazer; o serviço tem comissão 0% e a tinta vai para o dono
 - Serviços podem ser marcados como exclusivos do dono
 ```
 

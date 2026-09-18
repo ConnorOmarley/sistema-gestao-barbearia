@@ -9,7 +9,7 @@
 - Cadastro e edição distinguem zero de campo ausente.
 - Editar só nome/preço preserva a comissão fixa do serviço.
 - Novos atendimentos exigem barbeiro e serviços ativos.
-- Pigmentação e nomes começando com “pintar” sempre têm comissão 0% e acesso a todos.
+- Pigmentação e nomes começando com “pintar” sempre têm comissão 0% e ficam restritos ao dono.
 - A migração corrige também serviços antigos que já tinham percentual fixo.
 - Dono recebe 100% do serviço e tinta; colaboradores não recebem comissão sobre tinta.
 
