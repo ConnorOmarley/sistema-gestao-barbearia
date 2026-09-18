@@ -52,6 +52,19 @@ CREATE TABLE IF NOT EXISTS atendimentos (
     FOREIGN KEY (servico_id) REFERENCES servicos(id)
   );
 
+  CREATE TABLE IF NOT EXISTS atendimento_itens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    atendimento_id INTEGER NOT NULL,
+    servico_id INTEGER NOT NULL,
+    valor_cobrado REAL NOT NULL,
+    valor_tinta REAL DEFAULT 0,
+    tem_pigmentacao INTEGER DEFAULT 0,
+    comissao_percentual REAL NOT NULL,
+    valor_comissao REAL NOT NULL,
+    FOREIGN KEY (atendimento_id) REFERENCES atendimentos(id),
+    FOREIGN KEY (servico_id) REFERENCES servicos(id)
+  );
+
   CREATE TABLE IF NOT EXISTS config (
     chave TEXT PRIMARY KEY,
     valor TEXT
@@ -59,7 +72,20 @@ CREATE TABLE IF NOT EXISTS atendimentos (
 
   CREATE INDEX IF NOT EXISTS idx_atendimentos_data ON atendimentos(data_hora);
   CREATE INDEX IF NOT EXISTS idx_atendimentos_barbeiro ON atendimentos(barbeiro_id);
+  CREATE INDEX IF NOT EXISTS idx_itens_atendimento ON atendimento_itens(atendimento_id);
 `);
+
+// Migração: transforma atendimentos antigos (serviço único) em itens.
+const temItens = db.exec('SELECT 1 FROM atendimento_itens');
+if (temItens.length === 0) {
+  const antigos = db.exec('SELECT id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao FROM atendimentos');
+  if (antigos.length > 0 && antigos[0].values.length > 0) {
+    for (const row of antigos[0].values) {
+      db.run('INSERT INTO atendimento_itens (atendimento_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao) VALUES (?, ?, ?, ?, ?, ?, ?)', row);
+    }
+    saveDatabase();
+  }
+}
 
 try { db.run('ALTER TABLE barbeiros ADD COLUMN foto TEXT'); } catch (e) {}
 

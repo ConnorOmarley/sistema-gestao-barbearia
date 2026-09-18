@@ -46,9 +46,20 @@ function getOne(query, params = []) {
 
 function run(query, params = []) {
   db.run(query, params);
-  saveDatabase();
   const result = getAll('SELECT last_insert_rowid() as id');
+  saveDatabase();
   return result[0].id;
+}
+
+function getItensAtendimento(id) {
+  return getAll(`
+    SELECT i.id, i.servico_id, i.valor_cobrado, i.valor_tinta, i.tem_pigmentacao, i.comissao_percentual, i.valor_comissao,
+           s.nome as servico_nome
+    FROM atendimento_itens i
+    JOIN servicos s ON i.servico_id = s.id
+    WHERE i.atendimento_id = ?
+    ORDER BY i.id
+  `, [id]);
 }
 
 app.get('/api/barbeiros', (req, res) => {
@@ -171,53 +182,112 @@ app.delete('/api/servicos/:id', (req, res) => {
 });
 
 app.post('/api/atendimentos', (req, res) => {
-  const { barbeiro_id, servico_id, valor_cobrado, observacao, valor_tinta, tem_pigmentacao } = req.body;
-  
+  const { barbeiro_id, observacao } = req.body;
+
+  let itens = req.body.itens;
+  if (!Array.isArray(itens) || itens.length === 0) {
+    if (req.body.servico_id) {
+      itens = [{
+        servico_id: req.body.servico_id,
+        valor_cobrado: req.body.valor_cobrado,
+        valor_tinta: req.body.valor_tinta || 0,
+        tem_pigmentacao: req.body.tem_pigmentacao || 0
+      }];
+    } else {
+      return res.status(400).json({ error: 'Informe pelo menos um serviço' });
+    }
+  }
+
   const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ?', [barbeiro_id]);
-  const servico = getOne('SELECT * FROM servicos WHERE id = ?', [servico_id]);
-  
-  if (!barbeiro || !servico) {
-    return res.status(400).json({ error: 'Barbeiro ou serviço não encontrado' });
+  if (!barbeiro) {
+    return res.status(400).json({ error: 'Barbeiro não encontrado' });
   }
-  
-  if (servico.apenas_dono && !barbeiro.is_dono) {
-    return res.status(400).json({ error: 'Este serviço só pode ser feito pelo dono' });
+
+  const tintaGlobal = parseFloat(req.body.valor_tinta) || 0;
+  const pigGlobal = req.body.tem_pigmentacao ? 1 : 0;
+
+  const itensCompletos = [];
+  let valorCobradoTotal = 0;
+  let valorTintaTotal = 0;
+  let valorComissaoTotal = 0;
+
+  for (let idx = 0; idx < itens.length; idx++) {
+    const item = itens[idx];
+    const servico = getOne('SELECT * FROM servicos WHERE id = ?', [item.servico_id]);
+    if (!servico) {
+      return res.status(400).json({ error: 'Serviço não encontrado' });
+    }
+    if (servico.apenas_dono && !barbeiro.is_dono) {
+      return res.status(400).json({ error: `O serviço "${servico.nome}" só pode ser feito pelo dono` });
+    }
+
+    const valorCobrado = parseFloat(item.valor_cobrado) || 0;
+    let tinta = parseFloat(item.valor_tinta) || 0;
+    let pigmentacao = (item.tem_pigmentacao || tinta > 0) ? 1 : 0;
+    if (idx === 0 && (tintaGlobal > 0 || pigGlobal)) {
+      tinta += tintaGlobal;
+      pigmentacao = 1;
+    }
+
+    let comissaoPercentual;
+    let valorComissao;
+    if (barbeiro.is_dono) {
+      comissaoPercentual = 100;
+      valorComissao = valorCobrado + tinta;
+    } else {
+      const comissaoFixa = (servico.comissao_fixa_pct !== null && servico.comissao_fixa_pct !== undefined)
+        ? servico.comissao_fixa_pct
+        : null;
+      comissaoPercentual = comissaoFixa !== null ? comissaoFixa : barbeiro.comissao_percentual;
+      valorComissao = (valorCobrado * comissaoPercentual) / 100;
+    }
+
+    itensCompletos.push({
+      servico_id: servico.id,
+      valor_cobrado: valorCobrado,
+      valor_tinta: tinta,
+      tem_pigmentacao: pigmentacao,
+      comissao_percentual: comissaoPercentual,
+      valor_comissao: valorComissao
+    });
+
+    valorCobradoTotal += valorCobrado;
+    valorTintaTotal += tinta;
+    valorComissaoTotal += valorComissao;
   }
-  
-  const comissaoFixa = (servico.comissao_fixa_pct !== null && servico.comissao_fixa_pct !== undefined)
-    ? servico.comissao_fixa_pct
-    : null;
-  let comissao_percentual = barbeiro.comissao_percentual;
-  if (!barbeiro.is_dono && comissaoFixa !== null) {
-    comissao_percentual = comissaoFixa;
+
+  if (itensCompletos.length === 0) {
+    return res.status(400).json({ error: 'Nenhum serviço válido informado' });
   }
-  let valor_comissao = (valor_cobrado * comissao_percentual) / 100;
+
+  const totalBase = valorCobradoTotal + valorTintaTotal;
+  const comissaoMediaPct = totalBase > 0 ? (valorComissaoTotal / totalBase) * 100 : 0;
   const data_hora = new Date().toISOString();
-  const tinta = valor_tinta ? parseFloat(valor_tinta) : 0;
-  const pigmentacao = (tem_pigmentacao || tinta > 0) ? 1 : 0;
-  // Regra: comissao so existe para colaboradores. O dono recebe
-  // 100% de tudo que ele mesmo atende (servico + tinta), pois a
-  // barbearia e dele.
-  if (barbeiro.is_dono) {
-    comissao_percentual = 100;
-    valor_comissao = valor_cobrado + tinta;
-  }
-  
+  const temPigmentacaoGeral = itensCompletos.some(i => i.tem_pigmentacao) ? 1 : 0;
+
   const id = run(`
     INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [barbeiro_id, servico_id, valor_cobrado, tinta, pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao || '']);
-  
+  `, [barbeiro_id, itensCompletos[0].servico_id, valorCobradoTotal, valorTintaTotal, temPigmentacaoGeral, comissaoMediaPct, valorComissaoTotal, data_hora, observacao || '']);
+
+  for (const item of itensCompletos) {
+    run(`
+      INSERT INTO atendimento_itens (atendimento_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `, [id, item.servico_id, item.valor_cobrado, item.valor_tinta, item.tem_pigmentacao, item.comissao_percentual, item.valor_comissao]);
+  }
+
   res.json({
     id,
     barbeiro_id,
-    servico_id,
-    valor_cobrado,
-    valor_tinta: tinta,
-    tem_pigmentacao: pigmentacao,
-    comissao_percentual,
-    valor_comissao,
-    data_hora
+    servico_id: itensCompletos[0].servico_id,
+    valor_cobrado: valorCobradoTotal,
+    valor_tinta: valorTintaTotal,
+    tem_pigmentacao: temPigmentacaoGeral,
+    comissao_percentual: comissaoMediaPct,
+    valor_comissao: valorComissaoTotal,
+    data_hora,
+    itens: itensCompletos
   });
 });
 
@@ -249,20 +319,26 @@ app.get('/api/atendimentos', (req, res) => {
   
   query += ' ORDER BY a.data_hora DESC';
   
-  const atendimentos = getAll(query, params);
+  const atendimentos = getAll(query, params).map(a => {
+    a.itens = getItensAtendimento(a.id);
+    return a;
+  });
   res.json(atendimentos);
 });
 
 app.delete('/api/atendimentos', (req, res) => {
+  db.run('DELETE FROM atendimento_itens');
   db.run('DELETE FROM atendimentos');
   try {
     db.run("DELETE FROM sqlite_sequence WHERE name = 'atendimentos'");
+    db.run("DELETE FROM sqlite_sequence WHERE name = 'atendimento_itens'");
   } catch (e) {}
   saveDatabase();
   res.json({ success: true, message: 'Todos os atendimentos foram limpos' });
 });
 
 app.delete('/api/atendimentos/:id', (req, res) => {
+  db.run('DELETE FROM atendimento_itens WHERE atendimento_id = ?', [req.params.id]);
   db.run('DELETE FROM atendimentos WHERE id = ?', [req.params.id]);
   saveDatabase();
   res.json({ success: true });
@@ -443,7 +519,11 @@ app.get('/api/relatorio/atendimentos', requerAcessoRelatorio, (req, res) => {
 
   query += ' ORDER BY a.data_hora DESC';
 
-  res.json(getAll(query, params));
+  const atendimentos = getAll(query, params).map(a => {
+    a.itens = getItensAtendimento(a.id);
+    return a;
+  });
+  res.json(atendimentos);
 });
 
 app.post('/api/backup', (req, res) => {

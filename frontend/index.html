@@ -1296,6 +1296,39 @@
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(100%); opacity: 0; }
         }
+
+        .item-add-row {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .item-add-btn {
+            white-space: nowrap;
+        }
+
+        .itens-atendimento {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .atendimento-item-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--gold-primary);
+            border-radius: var(--radius-sm);
+            padding: 8px 10px;
+        }
+
+        .atendimento-item-row .item-nome-exibido {
+            color: #fff;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -1382,21 +1415,20 @@
                                         <select id="atend-barbeiro" required></select>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="atend-servico">Serviço Realizado:</label>
-                                    <div class="input-icon-wrapper">
-                                        <i class="fas fa-cut"></i>
-                                        <select id="atend-servico" required></select>
-                                    </div>
-                                </div>
                             </div>
 
                             <div class="form-group">
-                                <label for="atend-valor">Valor Cobrado (R$):</label>
-                                <div class="input-icon-wrapper">
-                                    <i class="fas fa-dollar-sign"></i>
-                                    <input type="number" id="atend-valor" step="0.01" min="0" placeholder="0.00" required>
+                                <label>Serviços Realizados:</label>
+                                <div class="item-add-row">
+                                    <div class="input-icon-wrapper" style="flex: 1;">
+                                        <i class="fas fa-cut"></i>
+                                        <select id="atend-servico"></select>
+                                    </div>
+                                    <button type="button" class="btn btn-outline item-add-btn" onclick="adicionarServicoItem()">
+                                        <i class="fas fa-plus"></i> Adicionar
+                                    </button>
                                 </div>
+                                <div id="lista-itens-atendimento" class="itens-atendimento"></div>
                             </div>
 
                             <div class="switch-container">
@@ -2321,40 +2353,46 @@
         // Live Preview do Atendimento
         function updateLivePreview() {
             const selectBarb = document.getElementById('atend-barbeiro');
-            const selectServ = document.getElementById('atend-servico');
-            const inputValor = document.getElementById('atend-valor');
             const checkTinta = document.getElementById('atend-pigmentacao');
             const inputTinta = document.getElementById('atend-valor-tinta');
 
-            const barbeiroId = selectBarb.value;
-            const barbeiro = cachedBarbeiros.find(b => b.id == barbeiroId);
-            const servicoId = selectServ.value;
-            const servico = cachedServicos.find(s => s.id == servicoId);
-
-            const valorCobrado = parseFloat(inputValor.value || 0);
+            const barbeiro = cachedBarbeiros.find(b => b.id == selectBarb.value);
             const valorTinta = checkTinta.checked ? parseFloat(inputTinta.value || 0) : 0;
 
             document.getElementById('preview-barbeiro').textContent = barbeiro ? barbeiro.nome : '--';
-            document.getElementById('preview-servico').textContent = servico ? servico.nome : '--';
 
             if (barbeiro) {
                 const dono = barbeiro.is_dono == 1;
-                const comissaoFixa = (servico && servico.comissao_fixa_pct !== null && servico.comissao_fixa_pct !== undefined)
-                    ? servico.comissao_fixa_pct
-                    : null;
-                let taxa = barbeiro.comissao_percentual;
-                if (!dono && comissaoFixa !== null) taxa = comissaoFixa;
-                document.getElementById('preview-comissao-taxa').textContent = `${taxa}%`;
-                const comissao = dono
-                    ? (valorCobrado + valorTinta)
-                    : (valorCobrado * taxa) / 100;
-                const parteBarbearia = (valorCobrado + valorTinta) - comissao;
-                document.getElementById('preview-comissao-valor').textContent = `R$ ${comissao.toFixed(2)}`;
+                let comissaoBarbeiro = 0;
+                let valorServicos = 0;
+                const nomes = itensAtendimento.map(item => {
+                    const servico = cachedServicos.find(s => s.id == item.servico_id);
+                    const comissaoFixa = (servico && servico.comissao_fixa_pct !== null && servico.comissao_fixa_pct !== undefined)
+                        ? servico.comissao_fixa_pct
+                        : null;
+                    const pct = dono ? 100 : (comissaoFixa !== null ? comissaoFixa : barbeiro.comissao_percentual);
+                    comissaoBarbeiro += dono ? item.valor : (item.valor * pct) / 100;
+                    valorServicos += item.valor;
+                    return item.nome;
+                });
+
+                if (dono) {
+                    comissaoBarbeiro += valorTinta;
+                }
+
+                const total = valorServicos + valorTinta;
+                const parteBarbearia = total - comissaoBarbeiro;
+                const pctExibido = total > 0 ? ((comissaoBarbeiro / total) * 100).toFixed(1) : 0;
+
+                document.getElementById('preview-servico').textContent = nomes.length ? nomes.join(' + ') : '--';
+                document.getElementById('preview-comissao-taxa').textContent = `${pctExibido}%`;
+                document.getElementById('preview-comissao-valor').textContent = `R$ ${comissaoBarbeiro.toFixed(2)}`;
                 document.getElementById('preview-barbearia-valor').textContent = `R$ ${parteBarbearia.toFixed(2)}`;
             } else {
                 document.getElementById('preview-comissao-taxa').textContent = '0%';
                 document.getElementById('preview-comissao-valor').textContent = 'R$ 0,00';
                 document.getElementById('preview-barbearia-valor').textContent = 'R$ 0,00';
+                document.getElementById('preview-servico').textContent = '--';
             }
 
             const tintaRow = document.getElementById('preview-tinta-row');
@@ -2365,8 +2403,69 @@
                 tintaRow.style.display = 'none';
             }
 
-            const total = valorCobrado + valorTinta;
-            document.getElementById('preview-total').textContent = `R$ ${total.toFixed(2)}`;
+            const totalGeral = itensAtendimento.reduce((s, i) => s + (i.valor || 0), 0) + valorTinta;
+            document.getElementById('preview-total').textContent = `R$ ${totalGeral.toFixed(2)}`;
+        }
+
+        // Lista de serviços do atendimento (múltiplos serviços)
+        let itensAtendimento = [];
+
+        function adicionarServicoItem() {
+            const select = document.getElementById('atend-servico');
+            const servicoId = select.value;
+            if (!servicoId) {
+                showToast('Selecione um serviço para adicionar.', 'error');
+                return;
+            }
+            const servico = cachedServicos.find(s => s.id == servicoId);
+            if (!servico) return;
+            if (itensAtendimento.some(i => i.servico_id == servico.id)) {
+                showToast(`"${servico.nome}" já está na lista.`, 'error');
+                return;
+            }
+            itensAtendimento.push({
+                servico_id: servico.id,
+                nome: servico.nome,
+                valor: servico.valor
+            });
+            select.value = '';
+            renderItensAtendimento();
+            updateLivePreview();
+        }
+
+        function removerServicoItem(idx) {
+            itensAtendimento.splice(idx, 1);
+            renderItensAtendimento();
+            updateLivePreview();
+        }
+
+        function renderItensAtendimento() {
+            const container = document.getElementById('lista-itens-atendimento');
+            if (itensAtendimento.length === 0) {
+                container.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem; padding: 6px 0;">Nenhum serviço adicionado. Escolha acima e clique em Adicionar.</div>';
+                return;
+            }
+            container.innerHTML = itensAtendimento.map((item, idx) => `
+                <div class="atendimento-item-row">
+                    <div class="input-icon-wrapper" style="flex: 1;">
+                        <i class="fas fa-cut"></i>
+                        <input type="text" class="item-nome-exibido" value="${item.nome}" readonly>
+                    </div>
+                    <div class="input-icon-wrapper" style="flex: 0 0 150px;">
+                        <i class="fas fa-dollar-sign"></i>
+                        <input type="number" class="item-valor-exibido" step="0.01" min="0" value="${item.valor.toFixed(2)}" data-idx="${idx}">
+                    </div>
+                    <button type="button" class="btn btn-danger btn-small" onclick="removerServicoItem(${idx})" title="Remover serviço">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+            container.querySelectorAll('.item-valor-exibido').forEach(inp => {
+                inp.addEventListener('input', () => {
+                    itensAtendimento[parseInt(inp.dataset.idx)].valor = parseFloat(inp.value) || 0;
+                    updateLivePreview();
+                });
+            });
         }
 
         // Carregar Barbeiros
@@ -2484,7 +2583,6 @@
             updateLivePreview();
         });
 
-        document.getElementById('atend-valor').addEventListener('input', updateLivePreview);
         document.getElementById('atend-valor-tinta').addEventListener('input', updateLivePreview);
 
         async function loadServicosSelect() {
@@ -2492,26 +2590,42 @@
                 const res = await fetch(`${API_URL}/servicos`);
                 cachedServicos = await res.json();
                 const select = document.getElementById('atend-servico');
-                select.innerHTML = '<option value="">Selecione o serviço...</option>' + 
+                select.innerHTML = '<option value="">Selecione um serviço...</option>' + 
                     cachedServicos.map(s => `<option value="${s.id}">${s.nome} - R$ ${s.valor.toFixed(2)}</option>`).join('');
-                
-                select.onchange = () => {
-                    const servico = cachedServicos.find(s => s.id == select.value);
-                    if (servico) {
-                        document.getElementById('atend-valor').value = servico.valor.toFixed(2);
-                    }
-                    updateLivePreview();
-                };
+                select.onchange = updateLivePreview;
             } catch (err) {
                 console.error(err);
             }
         }
 
-        // Histórico de Atendimentos
+        // Conversão de dia local para instantes UTC (fim/inicio do dia no fuso da máquina)
+        function utcInicioDiaLocal(ano, mes0, dia) {
+            return new Date(ano, mes0, dia, 0, 0, 0, 0).toISOString();
+        }
+
+        function utcFimDiaLocal(ano, mes0, dia) {
+            return new Date(ano, mes0, dia, 23, 59, 59, 999).toISOString();
+        }
+
+        function dataInputParaUtcInicio(ymd) {
+            const p = ymd.split('-').map(Number);
+            return utcInicioDiaLocal(p[0], p[1] - 1, p[2]);
+        }
+
+        function dataInputParaUtcFim(ymd) {
+            const p = ymd.split('-').map(Number);
+            return utcFimDiaLocal(p[0], p[1] - 1, p[2]);
+        }
+
+        function dataLocalISO(d) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        // Histórico de Atendimentos (sempre do dia de hoje, no horário local)
         async function loadHistorico() {
             const hoje = new Date();
-            const dataInicio = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}T00:00:00Z`;
-            const dataFim = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}T23:59:59Z`;
+            const dataInicio = utcInicioDiaLocal(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+            const dataFim = utcFimDiaLocal(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
             
             try {
                 const res = await fetch(`${API_URL}/atendimentos?data_inicio=${dataInicio}&data_fim=${dataFim}`);
@@ -2535,14 +2649,12 @@
             const dataLocal = new Date();
             let inicio = new Date(dataLocal);
             if (periodo === 'semana') {
-                const diaSemana = dataLocal.getDay();
-                inicio = new Date(dataLocal);
-                inicio.setDate(dataLocal.getDate() - diaSemana);
+                inicio.setDate(dataLocal.getDate() - dataLocal.getDay());
             } else if (periodo === 'mes') {
                 inicio = new Date(dataLocal.getFullYear(), dataLocal.getMonth(), 1);
             }
-            histDonoInicio = `${inicio.getFullYear()}-${String(inicio.getMonth()+1).padStart(2,'0')}-${String(inicio.getDate()).padStart(2,'0')}T00:00:00Z`;
-            histDonoFim = `${dataLocal.getFullYear()}-${String(dataLocal.getMonth()+1).padStart(2,'0')}-${String(dataLocal.getDate()).padStart(2,'0')}T23:59:59Z`;
+            histDonoInicio = utcInicioDiaLocal(inicio.getFullYear(), inicio.getMonth(), inicio.getDate());
+            histDonoFim = utcFimDiaLocal(dataLocal.getFullYear(), dataLocal.getMonth(), dataLocal.getDate());
             loadHistoricoDono();
         }
 
@@ -2567,7 +2679,18 @@
                 return;
             }
 
-            tbody.innerHTML = atendimentos.map(a => `
+            tbody.innerHTML = atendimentos.map(a => {
+                const itens = (a.itens && a.itens.length)
+                    ? a.itens
+                    : [{ servico_nome: a.servico_nome, valor_cobrado: a.valor_cobrado, comissao_percentual: a.comissao_percentual }];
+                const servicosCell = itens.map(i => `
+                    <div style="display:flex; align-items:center; gap:6px; margin:2px 0;">
+                        <span class="badge badge-blue">${i.servico_nome}</span>
+                        <span style="font-size:0.78rem; color:var(--text-muted);">R$ ${Number(i.valor_cobrado).toFixed(2)}</span>
+                        <span class="badge badge-gold">${i.comissao_percentual}%</span>
+                    </div>
+                `).join('');
+                return `
                 <tr>
                     <td>
                         <div style="font-weight:600; color:#fff;">${new Date(a.data_hora).toLocaleDateString('pt-BR')}</div>
@@ -2580,13 +2703,14 @@
                             ${a.barbeiro_is_dono ? '<i class="fas fa-crown" style="color: var(--gold-primary);" title="Proprietário"></i>' : ''}
                         </div>
                     </td>
-                    <td><span class="badge badge-blue">${a.servico_nome}</span></td>
-                    <td style="font-weight:700;">R$ ${a.valor_cobrado.toFixed(2)}</td>
-                    <td><span class="badge badge-gold">${a.comissao_percentual}%</span></td>
-                    <td style="color: var(--emerald); font-weight:700;">R$ ${a.valor_comissao.toFixed(2)}</td>
+                    <td>${servicosCell}</td>
+                    <td style="font-weight:700;">R$ ${Number(a.valor_cobrado).toFixed(2)}</td>
+                    <td><span class="badge badge-gold">${Number(a.comissao_percentual).toFixed(1)}%</span></td>
+                    <td style="color: var(--emerald); font-weight:700;">R$ ${Number(a.valor_comissao).toFixed(2)}</td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;">${a.observacao || '-'}</td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Relatórios Financeiros
@@ -2597,12 +2721,12 @@
             let urlComissoes = `${API_URL}/relatorio/comissoes?`;
             let urlGeral = `${API_URL}/relatorio/geral?`;
             if (dataInicio) {
-                urlComissoes += `data_inicio=${dataInicio}T00:00:00Z&`;
-                urlGeral += `data_inicio=${dataInicio}T00:00:00Z&`;
+                urlComissoes += `data_inicio=${dataInputParaUtcInicio(dataInicio)}&`;
+                urlGeral += `data_inicio=${dataInputParaUtcInicio(dataInicio)}&`;
             }
             if (dataFim) {
-                urlComissoes += `data_fim=${dataFim}T23:59:59Z`;
-                urlGeral += `data_fim=${dataFim}T23:59:59Z`;
+                urlComissoes += `data_fim=${dataInputParaUtcFim(dataFim)}`;
+                urlGeral += `data_fim=${dataInputParaUtcFim(dataFim)}`;
             }
             
             try {
@@ -2787,16 +2911,16 @@
             if (targetBtn) targetBtn.classList.add('active');
 
             const hoje = new Date();
-            let inicio = new Date();
-            let fim = new Date();
+            let inicio = new Date(hoje);
+            let fim = new Date(hoje);
 
             if (periodo === 'hoje') {
                 inicio = hoje;
                 fim = hoje;
             } else if (periodo === 'semana') {
-                const primeiroDia = hoje.getDate() - hoje.getDay();
-                inicio = new Date(hoje.setDate(primeiroDia));
-                fim = new Date();
+                inicio = new Date(hoje);
+                inicio.setDate(hoje.getDate() - hoje.getDay());
+                fim = new Date(hoje);
             } else if (periodo === 'mes') {
                 inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
                 fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
@@ -2810,8 +2934,8 @@
                 return;
             }
 
-            document.getElementById('rel-data-inicio').value = inicio.toISOString().split('T')[0];
-            document.getElementById('rel-data-fim').value = fim.toISOString().split('T')[0];
+            document.getElementById('rel-data-inicio').value = dataLocalISO(inicio);
+            document.getElementById('rel-data-fim').value = dataLocalISO(fim);
             
             if (autoLoad) {
                 loadRelatorio();
@@ -2822,8 +2946,14 @@
         document.getElementById('form-atendimento').addEventListener('submit', async (e) => {
             e.preventDefault();
             const barbeiro_id = document.getElementById('atend-barbeiro').value;
-            const servico_id = document.getElementById('atend-servico').value;
-            const valor_cobrado = document.getElementById('atend-valor').value;
+            if (!barbeiro_id) {
+                showToast('Selecione o profissional.', 'error');
+                return;
+            }
+            if (itensAtendimento.length === 0) {
+                showToast('Adicione pelo menos um serviço.', 'error');
+                return;
+            }
             const observacao = document.getElementById('atend-obs').value;
             const pigmentacao = document.getElementById('atend-pigmentacao').checked;
             const valor_tinta = pigmentacao ? parseFloat(document.getElementById('atend-valor-tinta').value || 0) : 0;
@@ -2834,8 +2964,10 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         barbeiro_id: parseInt(barbeiro_id),
-                        servico_id: parseInt(servico_id),
-                        valor_cobrado: parseFloat(valor_cobrado),
+                        itens: itensAtendimento.map(item => ({
+                            servico_id: item.servico_id,
+                            valor_cobrado: item.valor
+                        })),
                         observacao,
                         valor_tinta,
                         tem_pigmentacao: pigmentacao ? 1 : 0
@@ -2846,6 +2978,8 @@
                 
                 if (res.ok) {
                     showToast('Atendimento registrado com sucesso!', 'success');
+                    itensAtendimento = [];
+                    renderItensAtendimento();
                     e.target.reset();
                     document.getElementById('div-valor-tinta').style.display = 'none';
                     updateLivePreview();
@@ -3008,6 +3142,7 @@
         });
 
         // Inicialização
+        renderItensAtendimento();
         const savedTab = localStorage.getItem('activeTab') || 'atendimento';
         showTab(savedTab, false);
         atualizarUIacessoDono();
