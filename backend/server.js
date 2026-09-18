@@ -151,13 +151,19 @@ app.get('/api/servicos', (req, res) => {
   res.json(servicos);
 });
 
+function isServicoPigmentacao(nome) {
+  return /^(pigmenta|pintar)/i.test((nome || '').trim());
+}
+
 app.post('/api/servicos', (req, res) => {
   const nome = (req.body.nome || '').trim();
   const valor = parseFloat(req.body.valor) || 0;
-  const apenas_dono = req.body.apenas_dono ? 1 : 0;
-  const comissao_fixa_pct = (req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
-    ? null
-    : (parseFloat(req.body.comissao_fixa_pct) || 0);
+  const apenas_dono = isServicoPigmentacao(nome) ? 0 : (req.body.apenas_dono ? 1 : 0);
+  const comissao_fixa_pct = isServicoPigmentacao(nome)
+    ? 0
+    : ((req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
+      ? null
+      : (parseFloat(req.body.comissao_fixa_pct) || 0));
   const id = run('INSERT INTO servicos (nome, valor, apenas_dono, comissao_fixa_pct) VALUES (?, ?, ?, ?)', [nome, valor, apenas_dono, comissao_fixa_pct]);
   res.json({ id, nome, valor, apenas_dono, comissao_fixa_pct });
 });
@@ -166,10 +172,12 @@ app.put('/api/servicos/:id', (req, res) => {
   const servico = getOne('SELECT * FROM servicos WHERE id = ?', [req.params.id]);
   const nome = (req.body.nome || servico.nome || '').trim();
   const valor = parseFloat(req.body.valor) || servico.valor || 0;
-  const apenas_dono = req.body.apenas_dono !== undefined ? (req.body.apenas_dono ? 1 : 0) : servico.apenas_dono;
-  const comissao_fixa_pct = (req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
-    ? null
-    : (parseFloat(req.body.comissao_fixa_pct) || 0);
+  const apenas_dono = isServicoPigmentacao(nome) ? 0 : (req.body.apenas_dono !== undefined ? (req.body.apenas_dono ? 1 : 0) : servico.apenas_dono);
+  const comissao_fixa_pct = isServicoPigmentacao(nome)
+    ? 0
+    : ((req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
+      ? null
+      : (parseFloat(req.body.comissao_fixa_pct) || 0));
   db.run('UPDATE servicos SET nome = ?, valor = ?, apenas_dono = ?, comissao_fixa_pct = ? WHERE id = ?', [nome, valor, apenas_dono, comissao_fixa_pct, req.params.id]);
   saveDatabase();
   res.json({ id: req.params.id, nome, valor, apenas_dono, comissao_fixa_pct });
