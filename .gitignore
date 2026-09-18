@@ -9,3 +9,4 @@ node_modules/
 frontend/assets/perfil/
 
 *.zip
+backend/.testdata/
