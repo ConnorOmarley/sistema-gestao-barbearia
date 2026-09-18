@@ -1350,6 +1350,9 @@
             <button class="nav-tab nav-tab-relatorio" id="nav-tab-relatorio" style="display:none;" onclick="showTab('relatorio')">
                 <i class="fas fa-chart-line"></i> Relatórios Financeiros
             </button>
+            <button class="nav-tab nav-tab-relatorio" id="nav-tab-historico-dono" style="display:none;" onclick="showTab('historico-dono')">
+                <i class="fas fa-clock-rotate-left"></i> Histórico do Dono
+            </button>
         </nav>
 
         <!-- Conteúdo Principal -->
@@ -1553,28 +1556,45 @@
                 <div class="section-header">
                     <div>
                         <h2><i class="fas fa-history"></i> Histórico de Atendimentos</h2>
-                        <p class="section-subtitle">Lista completa de todos os atendimentos registrados no sistema</p>
-                    </div>
-                </div>
-
-                <div class="filters-bar">
-                    <div class="form-group">
-                        <label for="hist-data-inicio">Data Início:</label>
-                        <input type="date" id="hist-data-inicio">
-                    </div>
-                    <div class="form-group">
-                        <label for="hist-data-fim">Data Fim:</label>
-                        <input type="date" id="hist-data-fim">
-                    </div>
-                    <div class="form-group" style="flex: 0 0 160px;">
-                        <button class="btn btn-primary" onclick="loadHistorico()">
-                            <i class="fas fa-filter"></i> Filtrar
-                        </button>
+                        <p class="section-subtitle">Atendimentos registrados hoje</p>
                     </div>
                 </div>
 
                 <div class="table-responsive">
                     <table id="table-historico">
+                        <thead>
+                            <tr>
+                                <th>Data & Hora</th>
+                                <th>Profissional</th>
+                                <th>Serviço</th>
+                                <th>Valor Cobrado</th>
+                                <th>Comissão %</th>
+                                <th>Valor Comissão</th>
+                                <th>Observação</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 3.5 SEÇÃO HISTÓRICO DO DONO -->
+            <section id="historico-dono" class="tab-section">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fas fa-clock-rotate-left"></i> Histórico do Dono</h2>
+                        <p class="section-subtitle">Relatório completo com todos os atendimentos por período</p>
+                    </div>
+                </div>
+
+                <div class="period-chips">
+                    <button class="chip-btn active" onclick="selectPeriodoHistoricoDono('hoje')">Hoje</button>
+                    <button class="chip-btn" onclick="selectPeriodoHistoricoDono('semana')">Esta Semana</button>
+                    <button class="chip-btn" onclick="selectPeriodoHistoricoDono('mes')">Este Mês</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="table-historico-dono">
                         <thead>
                             <tr>
                                 <th>Data & Hora</th>
@@ -1686,6 +1706,13 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
+                            <div class="form-group">
+                                <label for="serv-comissao-fixa">Comissão p/ Colaborador (%):</label>
+                                <div class="input-icon-wrapper">
+                                    <i class="fas fa-percentage"></i>
+                                    <input type="number" id="serv-comissao-fixa" step="0.01" min="0" max="100" placeholder="Vazio = padrão do barbeiro, 0 = só o dono ganha">
+                                </div>
+                            </div>
                             <button type="submit" class="btn btn-success">
                                 <i class="fas fa-plus"></i> Cadastrar Serviço
                             </button>
@@ -1703,6 +1730,7 @@
                                         <th>Nome</th>
                                         <th>Valor</th>
                                         <th>Permissão</th>
+                                        <th>Comissão Colab.</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
@@ -1794,6 +1822,13 @@
                         <input type="checkbox" id="edit-serv-apenas-dono">
                         <span class="toggle-slider"></span>
                     </label>
+                </div>
+                <div class="form-group">
+                    <label for="edit-serv-comissao-fixa">Comissão p/ Colaborador (%):</label>
+                    <div class="input-icon-wrapper">
+                        <i class="fas fa-percentage"></i>
+                        <input type="number" id="edit-serv-comissao-fixa" step="0.01" min="0" max="100" placeholder="Vazio = padrão do barbeiro, 0 = só o dono ganha">
+                    </div>
                 </div>
                 <div style="display:flex; gap: 12px; margin-top: 24px;">
                     <button type="submit" class="btn btn-success" style="flex: 1;">Salvar Alterações</button>
@@ -2144,6 +2179,17 @@
                 }
                 loadRelatorio();
             }
+            if (tabName === 'historico-dono') {
+                if (!relatorioToken()) {
+                    abrirModalSenhaRelatorio();
+                    showTab('atendimento', save);
+                    return;
+                }
+                if (!histDonoPeriodo) {
+                    selectPeriodoHistoricoDono('hoje');
+                }
+                loadHistoricoDono();
+            }
             if (tabName === 'atendimento') {
                 loadBarbeirosSelect();
                 loadServicosSelect();
@@ -2159,9 +2205,11 @@
         function atualizarUIacessoDono() {
             const temToken = !!relatorioToken();
             const navRelatorio = document.getElementById('nav-tab-relatorio');
+            const navHistoricoDono = document.getElementById('nav-tab-historico-dono');
             const badgeDono = document.getElementById('btn-dono-badge');
             const statusBadge = document.getElementById('status-badge-dono');
             if (navRelatorio) navRelatorio.style.display = temToken ? '' : 'none';
+            if (navHistoricoDono) navHistoricoDono.style.display = temToken ? '' : 'none';
             if (badgeDono) badgeDono.style.display = temToken ? '' : 'none';
             if (statusBadge) {
                 statusBadge.innerHTML = temToken
@@ -2174,7 +2222,8 @@
             if (relatorioToken()) {
                 removerTokenRelatorio();
                 atualizarUIacessoDono();
-                if (document.getElementById('relatorio').classList.contains('active')) {
+                if (document.getElementById('relatorio').classList.contains('active') ||
+                    document.getElementById('historico-dono').classList.contains('active')) {
                     showTab('atendimento', false);
                 }
                 showToast('Acesso do dono encerrado.', 'success');
@@ -2286,18 +2335,24 @@
             const valorTinta = checkTinta.checked ? parseFloat(inputTinta.value || 0) : 0;
 
             document.getElementById('preview-barbeiro').textContent = barbeiro ? barbeiro.nome : '--';
-            document.getElementById('preview-comissao-taxa').textContent = barbeiro ? `${barbeiro.comissao_percentual}%` : '0%';
             document.getElementById('preview-servico').textContent = servico ? servico.nome : '--';
 
             if (barbeiro) {
                 const dono = barbeiro.is_dono == 1;
+                const comissaoFixa = (servico && servico.comissao_fixa_pct !== null && servico.comissao_fixa_pct !== undefined)
+                    ? servico.comissao_fixa_pct
+                    : null;
+                let taxa = barbeiro.comissao_percentual;
+                if (!dono && comissaoFixa !== null) taxa = comissaoFixa;
+                document.getElementById('preview-comissao-taxa').textContent = `${taxa}%`;
                 const comissao = dono
                     ? (valorCobrado + valorTinta)
-                    : (valorCobrado * barbeiro.comissao_percentual) / 100;
+                    : (valorCobrado * taxa) / 100;
                 const parteBarbearia = (valorCobrado + valorTinta) - comissao;
                 document.getElementById('preview-comissao-valor').textContent = `R$ ${comissao.toFixed(2)}`;
                 document.getElementById('preview-barbearia-valor').textContent = `R$ ${parteBarbearia.toFixed(2)}`;
             } else {
+                document.getElementById('preview-comissao-taxa').textContent = '0%';
                 document.getElementById('preview-comissao-valor').textContent = 'R$ 0,00';
                 document.getElementById('preview-barbearia-valor').textContent = 'R$ 0,00';
             }
@@ -2372,14 +2427,21 @@
                     const restrictionBadge = s.apenas_dono 
                         ? `<span class="badge badge-red"><i class="fas fa-lock"></i> Apenas Dono</span>` 
                         : `<span class="badge badge-green"><i class="fas fa-globe"></i> Todos</span>`;
+                    const comissaoBadge = (s.comissao_fixa_pct !== null && s.comissao_fixa_pct !== undefined)
+                        ? (s.comissao_fixa_pct === 0
+                            ? `<span class="badge badge-red"><i class="fas fa-crown"></i> 0% (dono)</span>`
+                            : `<span class="badge badge-gold">Fixo: ${s.comissao_fixa_pct}%</span>`)
+                        : `<span class="badge"><i class="fas fa-user-tie"></i> Padrão barbeiro</span>`;
+                    const comissaoJS = (s.comissao_fixa_pct === null || s.comissao_fixa_pct === undefined) ? 'null' : s.comissao_fixa_pct;
                     return `
                     <tr>
                         <td><strong>${s.nome}</strong></td>
                         <td style="font-weight: 700; color: var(--gold-light);">R$ ${s.valor.toFixed(2)}</td>
                         <td>${restrictionBadge}</td>
+                        <td>${comissaoBadge}</td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-outline btn-small" onclick="editServico(${s.id}, '${s.nome}', ${s.valor}, ${s.apenas_dono})">
+                                <button class="btn btn-outline btn-small" onclick="editServico(${s.id}, '${s.nome}', ${s.valor}, ${s.apenas_dono}, ${comissaoJS})">
                                     <i class="fas fa-edit"></i> Editar
                                 </button>
                                 <button class="btn btn-danger btn-small" onclick="deleteServico(${s.id})">
@@ -2447,45 +2509,84 @@
 
         // Histórico de Atendimentos
         async function loadHistorico() {
-            const dataInicio = document.getElementById('hist-data-inicio').value;
-            const dataFim = document.getElementById('hist-data-fim').value;
-            
-            let url = `${API_URL}/atendimentos?`;
-            if (dataInicio) url += `data_inicio=${dataInicio}T00:00:00Z&`;
-            if (dataFim) url += `data_fim=${dataFim}T23:59:59Z`;
+            const hoje = new Date();
+            const dataInicio = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}T00:00:00Z`;
+            const dataFim = `${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}T23:59:59Z`;
             
             try {
-                const res = await fetch(url);
+                const res = await fetch(`${API_URL}/atendimentos?data_inicio=${dataInicio}&data_fim=${dataFim}`);
                 const atendimentos = await res.json();
-                const tbody = document.querySelector('#table-historico tbody');
-                
-                if (atendimentos.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">Nenhum atendimento registrado no período selecionado.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = atendimentos.map(a => `
-                    <tr>
-                        <td>
-                            <div style="font-weight:600; color:#fff;">${new Date(a.data_hora).toLocaleDateString('pt-BR')}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">${new Date(a.data_hora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</div>
-                        </td>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fas fa-user" style="color: var(--gold-primary); font-size: 0.8rem;"></i>
-                                <strong>${a.barbeiro_nome}</strong>
-                            </div>
-                        </td>
-                        <td><span class="badge badge-blue">${a.servico_nome}</span></td>
-                        <td style="font-weight:700;">R$ ${a.valor_cobrado.toFixed(2)}</td>
-                        <td><span class="badge badge-gold">${a.comissao_percentual}%</span></td>
-                        <td style="color: var(--emerald); font-weight:700;">R$ ${a.valor_comissao.toFixed(2)}</td>
-                        <td style="color: var(--text-muted); font-size: 0.85rem;">${a.observacao || '-'}</td>
-                    </tr>
-                `).join('');
+                renderLinhasHistorico(atendimentos, document.querySelector('#table-historico tbody'), 'Nenhum atendimento registrado hoje.');
             } catch (err) {
                 console.error('Erro ao carregar histórico:', err);
             }
+        }
+
+        let histDonoPeriodo = '';
+        let histDonoInicio = '';
+        let histDonoFim = '';
+
+        function selectPeriodoHistoricoDono(periodo) {
+            histDonoPeriodo = periodo;
+            document.querySelectorAll('#historico-dono .chip-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.querySelector(`#historico-dono .chip-btn[onclick="selectPeriodoHistoricoDono('${periodo}')"]`);
+            if (btn) btn.classList.add('active');
+
+            const dataLocal = new Date();
+            let inicio = new Date(dataLocal);
+            if (periodo === 'semana') {
+                const diaSemana = dataLocal.getDay();
+                inicio = new Date(dataLocal);
+                inicio.setDate(dataLocal.getDate() - diaSemana);
+            } else if (periodo === 'mes') {
+                inicio = new Date(dataLocal.getFullYear(), dataLocal.getMonth(), 1);
+            }
+            histDonoInicio = `${inicio.getFullYear()}-${String(inicio.getMonth()+1).padStart(2,'0')}-${String(inicio.getDate()).padStart(2,'0')}T00:00:00Z`;
+            histDonoFim = `${dataLocal.getFullYear()}-${String(dataLocal.getMonth()+1).padStart(2,'0')}-${String(dataLocal.getDate()).padStart(2,'0')}T23:59:59Z`;
+            loadHistoricoDono();
+        }
+
+        async function loadHistoricoDono() {
+            if (!histDonoPeriodo) {
+                selectPeriodoHistoricoDono('hoje');
+                return;
+            }
+            try {
+                const url = `${API_URL}/relatorio/atendimentos?data_inicio=${histDonoInicio}&data_fim=${histDonoFim}`;
+                const res = await fetch(url, { headers: { 'X-Relatorio-Token': relatorioToken() } });
+                const atendimentos = await res.json();
+                renderLinhasHistorico(atendimentos, document.querySelector('#table-historico-dono tbody'), 'Nenhum atendimento registrado no período.');
+            } catch (err) {
+                console.error('Erro ao carregar histórico do dono:', err);
+            }
+        }
+
+        function renderLinhasHistorico(atendimentos, tbody, msgVazia) {
+            if (atendimentos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">${msgVazia}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = atendimentos.map(a => `
+                <tr>
+                    <td>
+                        <div style="font-weight:600; color:#fff;">${new Date(a.data_hora).toLocaleDateString('pt-BR')}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">${new Date(a.data_hora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</div>
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <i class="fas fa-user" style="color: var(--gold-primary); font-size: 0.8rem;"></i>
+                            <strong>${a.barbeiro_nome}</strong>
+                            ${a.barbeiro_is_dono ? '<i class="fas fa-crown" style="color: var(--gold-primary);" title="Proprietário"></i>' : ''}
+                        </div>
+                    </td>
+                    <td><span class="badge badge-blue">${a.servico_nome}</span></td>
+                    <td style="font-weight:700;">R$ ${a.valor_cobrado.toFixed(2)}</td>
+                    <td><span class="badge badge-gold">${a.comissao_percentual}%</span></td>
+                    <td style="color: var(--emerald); font-weight:700;">R$ ${a.valor_comissao.toFixed(2)}</td>
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">${a.observacao || '-'}</td>
+                </tr>
+            `).join('');
         }
 
         // Relatórios Financeiros
@@ -2786,12 +2887,14 @@
             const nome = document.getElementById('serv-nome').value;
             const valor = document.getElementById('serv-valor').value;
             const apenas_dono = document.getElementById('serv-apenas-dono').checked;
+            const comissaoRaw = document.getElementById('serv-comissao-fixa').value;
+            const comissao_fixa_pct = comissaoRaw === '' ? null : parseFloat(comissaoRaw);
             
             try {
                 const res = await fetch(`${API_URL}/servicos`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono })
+                    body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono, comissao_fixa_pct })
                 });
                 
                 if (res.ok) {
@@ -2854,11 +2957,12 @@
             atualizarAvatarEditModal();
         }
 
-        function editServico(id, nome, valor, apenas_dono) {
+        function editServico(id, nome, valor, apenas_dono, comissao_fixa_pct) {
             document.getElementById('edit-serv-id').value = id;
             document.getElementById('edit-serv-nome').value = nome;
             document.getElementById('edit-serv-valor').value = valor;
             document.getElementById('edit-serv-apenas-dono').checked = apenas_dono;
+            document.getElementById('edit-serv-comissao-fixa').value = (comissao_fixa_pct === null || comissao_fixa_pct === undefined) ? '' : comissao_fixa_pct;
             document.getElementById('modal-editar-servico').style.display = 'flex';
         }
 
@@ -2889,11 +2993,13 @@
             const nome = document.getElementById('edit-serv-nome').value;
             const valor = document.getElementById('edit-serv-valor').value;
             const apenas_dono = document.getElementById('edit-serv-apenas-dono').checked;
+            const comissaoRaw = document.getElementById('edit-serv-comissao-fixa').value;
+            const comissao_fixa_pct = comissaoRaw === '' ? null : parseFloat(comissaoRaw);
             
             await fetch(`${API_URL}/servicos/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono })
+                body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono, comissao_fixa_pct })
             });
             
             closeEditServicoModal();

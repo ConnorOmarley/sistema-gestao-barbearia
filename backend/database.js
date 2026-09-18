@@ -33,6 +33,7 @@ db.run(`
     nome TEXT NOT NULL,
     valor REAL NOT NULL,
     apenas_dono INTEGER DEFAULT 0,
+    comissao_fixa_pct REAL DEFAULT NULL,
     ativo INTEGER DEFAULT 1
   );
 
@@ -62,6 +63,9 @@ CREATE TABLE IF NOT EXISTS atendimentos (
 
 try { db.run('ALTER TABLE barbeiros ADD COLUMN foto TEXT'); } catch (e) {}
 
+try { db.run('ALTER TABLE servicos ADD COLUMN comissao_fixa_pct REAL'); } catch (e) {}
+db.run("UPDATE servicos SET comissao_fixa_pct = 0 WHERE comissao_fixa_pct IS NULL AND nome LIKE 'Pigmenta%'");
+
 const donoExists = db.exec('SELECT 1 FROM barbeiros WHERE is_dono = 1');
 if (donoExists.length === 0) {
   db.run(`INSERT INTO barbeiros (nome, comissao_percentual, is_dono, ativo) VALUES ('Michael Barber', 100, 1, 1)`);
@@ -69,10 +73,10 @@ if (donoExists.length === 0) {
 
 const servicoExists = db.exec('SELECT 1 FROM servicos');
 if (servicoExists.length === 0) {
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Corte Simples', 30.00, 0, 1)`);
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Barba', 20.00, 0, 1)`);
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Corte + Barba', 45.00, 0, 1)`);
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo) VALUES ('Pigmentação', 80.00, 0, 1)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Corte Simples', 30.00, 0, 1, NULL)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Barba', 20.00, 0, 1, NULL)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Corte + Barba', 45.00, 0, 1, NULL)`);
+  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Pigmentação', 80.00, 0, 1, 0)`);
 }
 
 function saveDatabase() {

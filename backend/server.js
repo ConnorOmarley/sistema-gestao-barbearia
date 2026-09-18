@@ -144,8 +144,11 @@ app.post('/api/servicos', (req, res) => {
   const nome = (req.body.nome || '').trim();
   const valor = parseFloat(req.body.valor) || 0;
   const apenas_dono = req.body.apenas_dono ? 1 : 0;
-  const id = run('INSERT INTO servicos (nome, valor, apenas_dono) VALUES (?, ?, ?)', [nome, valor, apenas_dono]);
-  res.json({ id, nome, valor, apenas_dono });
+  const comissao_fixa_pct = (req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
+    ? null
+    : (parseFloat(req.body.comissao_fixa_pct) || 0);
+  const id = run('INSERT INTO servicos (nome, valor, apenas_dono, comissao_fixa_pct) VALUES (?, ?, ?, ?)', [nome, valor, apenas_dono, comissao_fixa_pct]);
+  res.json({ id, nome, valor, apenas_dono, comissao_fixa_pct });
 });
 
 app.put('/api/servicos/:id', (req, res) => {
@@ -153,9 +156,12 @@ app.put('/api/servicos/:id', (req, res) => {
   const nome = (req.body.nome || servico.nome || '').trim();
   const valor = parseFloat(req.body.valor) || servico.valor || 0;
   const apenas_dono = req.body.apenas_dono !== undefined ? (req.body.apenas_dono ? 1 : 0) : servico.apenas_dono;
-  db.run('UPDATE servicos SET nome = ?, valor = ?, apenas_dono = ? WHERE id = ?', [nome, valor, apenas_dono, req.params.id]);
+  const comissao_fixa_pct = (req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
+    ? null
+    : (parseFloat(req.body.comissao_fixa_pct) || 0);
+  db.run('UPDATE servicos SET nome = ?, valor = ?, apenas_dono = ?, comissao_fixa_pct = ? WHERE id = ?', [nome, valor, apenas_dono, comissao_fixa_pct, req.params.id]);
   saveDatabase();
-  res.json({ id: req.params.id, nome, valor, apenas_dono });
+  res.json({ id: req.params.id, nome, valor, apenas_dono, comissao_fixa_pct });
 });
 
 app.delete('/api/servicos/:id', (req, res) => {
@@ -178,7 +184,13 @@ app.post('/api/atendimentos', (req, res) => {
     return res.status(400).json({ error: 'Este serviço só pode ser feito pelo dono' });
   }
   
-  const comissao_percentual = barbeiro.comissao_percentual;
+  const comissaoFixa = (servico.comissao_fixa_pct !== null && servico.comissao_fixa_pct !== undefined)
+    ? servico.comissao_fixa_pct
+    : null;
+  let comissao_percentual = barbeiro.comissao_percentual;
+  if (!barbeiro.is_dono && comissaoFixa !== null) {
+    comissao_percentual = comissaoFixa;
+  }
   let valor_comissao = (valor_cobrado * comissao_percentual) / 100;
   const data_hora = new Date().toISOString();
   const tinta = valor_tinta ? parseFloat(valor_tinta) : 0;
@@ -187,6 +199,7 @@ app.post('/api/atendimentos', (req, res) => {
   // 100% de tudo que ele mesmo atende (servico + tinta), pois a
   // barbearia e dele.
   if (barbeiro.is_dono) {
+    comissao_percentual = 100;
     valor_comissao = valor_cobrado + tinta;
   }
   
@@ -400,6 +413,37 @@ app.get('/api/relatorio/geral', requerAcessoRelatorio, (req, res) => {
     total_barbearia: 0,
     total_atendimentos: 0
   });
+});
+
+app.get('/api/relatorio/atendimentos', requerAcessoRelatorio, (req, res) => {
+  const { data_inicio, data_fim } = req.query;
+
+  let query = `
+    SELECT 
+      a.*,
+      b.nome as barbeiro_nome,
+      b.is_dono as barbeiro_is_dono,
+      s.nome as servico_nome
+    FROM atendimentos a
+    JOIN barbeiros b ON a.barbeiro_id = b.id
+    JOIN servicos s ON a.servico_id = s.id
+    WHERE 1=1
+  `;
+  const params = [];
+
+  if (data_inicio) {
+    query += ' AND a.data_hora >= ?';
+    params.push(data_inicio);
+  }
+
+  if (data_fim) {
+    query += ' AND a.data_hora <= ?';
+    params.push(data_fim);
+  }
+
+  query += ' ORDER BY a.data_hora DESC';
+
+  res.json(getAll(query, params));
 });
 
 app.post('/api/backup', (req, res) => {
