@@ -76,11 +76,12 @@ COMISSÃO FIXA POR SERVIÇO (LUZES, REFLEXO, NEVOU E PIGMENTAÇÃO):
 -----------------------------------------------------------------------
 - Alguns serviços têm uma comissão FIXA, que não depende do percentual
   cadastrado em cada colaborador. Veja como funciona em cada caso:
-- PIGMENTAÇÃO: é um serviço EXCLUSIVO do Dono. Quando um colaborador
-  atende um serviço marcado com "Comissão 0%", o valor cobrado vai TODO
-  para a barbearia (o colaborador não recebe nada). Se junto com a
-  pigmentação houver também um corte, o colaborador continua ganhando
-  a comissão normal do corte (a parte dele).
+- PIGMENTAÇÃO: pode ser feita por QUALQUER barbeiro, mas o lucro vai
+  TODO para o Dono. Quando um colaborador atende um serviço marcado com
+  "Comissão 0%", o valor cobrado vai 100% para a barbearia (o
+  colaborador não recebe nada). Se junto com a pigmentação houver
+  também um corte, o colaborador continua ganhando a comissão normal
+  do corte (a parte dele).
 - LUZES / REFLEXO / NEVOU: são serviços de coloração cuja comissão é
   SEMPRE 35% para o colaborador, independentemente do % cadastrado no
   barbeiro. Ex: se o serviço custa R$ 100,00, o colaborador ganha

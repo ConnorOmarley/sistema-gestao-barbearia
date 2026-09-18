@@ -90,7 +90,7 @@ if (temItens.length === 0) {
 try { db.run('ALTER TABLE barbeiros ADD COLUMN foto TEXT'); } catch (e) {}
 
 try { db.run('ALTER TABLE servicos ADD COLUMN comissao_fixa_pct REAL'); } catch (e) {}
-db.run("UPDATE servicos SET comissao_fixa_pct = 0 WHERE comissao_fixa_pct IS NULL AND nome LIKE 'Pigmenta%'");
+db.run("UPDATE servicos SET comissao_fixa_pct = 0, apenas_dono = 0 WHERE comissao_fixa_pct IS NULL AND (nome LIKE 'Pigmenta%' OR nome LIKE 'Pintar%')");
 
 const donoExists = db.exec('SELECT 1 FROM barbeiros WHERE is_dono = 1');
 if (donoExists.length === 0) {
