@@ -78,6 +78,8 @@
         .app-container {
             max-width: 1400px;
             margin: 0 auto;
+            display: flex;
+            align-items: stretch;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-lg);
@@ -1329,6 +1331,379 @@
             color: #fff;
             font-weight: 600;
         }
+
+
+                .owner-item {
+                    background: var(--bg-card);
+                    border-radius: var(--radius-sm);
+                    border: 1px solid var(--border-subtle);
+                    padding: 14px 16px;
+                    margin-bottom: 12px;
+                    transition: var(--transition);
+                }
+
+                .owner-item:hover {
+                    border-color: var(--border-gold);
+                    background: rgba(212, 175, 55, 0.05);
+                }
+
+            .sidebar {
+                width: var(--sidebar-w, 272px);
+                flex-shrink: 0;
+                position: sticky;
+                top: 0;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                background: linear-gradient(180deg, #0d1119 0%, #0a0d13 100%);
+                border-right: 1px solid var(--border-subtle);
+                z-index: 60;
+            }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 1px;
+            background: linear-gradient(180deg, transparent, var(--gold-primary), transparent);
+            opacity: 0.18;
+            pointer-events: none;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 26px 22px 22px;
+            border-bottom: 1px solid var(--border-subtle);
+            position: relative;
+        }
+
+        .sidebar-brand .brand-icon { width: 48px; height: 48px; }
+        .sidebar-brand .brand-text h1 { font-size: 1.25rem; letter-spacing: 0.3px; }
+        .sidebar-brand .brand-text p { font-size: 0.72rem; letter-spacing: 1.6px; }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 18px 14px;
+            overflow-y: auto;
+        }
+
+        .sidebar-nav .nav-tab {
+            flex: none;
+            min-width: 0;
+            width: 100%;
+            padding: 12px 14px;
+            justify-content: flex-start;
+            border: none;
+            border-bottom: none;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-size: 0.86rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            gap: 12px;
+            background: transparent;
+            position: relative;
+        }
+
+        .sidebar-nav .nav-tab i {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-dim);
+            font-size: 0.92rem;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .sidebar-nav .nav-tab:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .sidebar-nav .nav-tab:hover i {
+            color: var(--gold-light);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .sidebar-nav .nav-tab.active {
+            color: var(--gold-light);
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.16), rgba(212, 175, 55, 0.04));
+            border-left: 3px solid var(--gold-primary);
+            box-shadow: inset 0 0 20px rgba(212, 175, 55, 0.05);
+        }
+
+        .sidebar-nav .nav-tab.active i {
+            color: var(--gold-primary);
+            background: rgba(212, 175, 55, 0.14);
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+        }
+
+        .sidebar-nav .nav-tab.nav-tab-relatorio {
+            background: rgba(212, 175, 55, 0.06);
+            border: 1px solid rgba(212, 175, 55, 0.18);
+        }
+
+        .sidebar-nav .nav-tab.nav-tab-relatorio i {
+            color: var(--gold-primary);
+            background: rgba(212, 175, 55, 0.12);
+        }
+
+        .sidebar-nav .nav-tab.nav-tab-relatorio.active {
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.26), rgba(212, 175, 55, 0.1));
+        }
+
+        .sidebar-footer {
+            padding: 16px 18px;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .sidebar-version {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.74rem;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .sidebar-version i { color: var(--gold-primary); }
+        .sidebar-version strong { color: var(--text-muted); font-weight: 600; }
+
+        .lbl-short { display: none; }
+
+        /* Painel principal */
+        .main-panel {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-header {
+            position: sticky;
+            top: 0;
+            z-index: 55;
+            background: rgba(13, 16, 23, 0.78);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-titles {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .topbar-titles h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.3px;
+            line-height: 1.2;
+        }
+
+        .topbar-titles p {
+            font-size: 0.74rem;
+            color: var(--text-dim);
+        }
+
+        .main-content { padding: 28px 32px 40px; }
+
+        .section-header h2 i {
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(212, 175, 55, 0.12);
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .live-preview-card { position: sticky; top: 96px; }
+
+        /* Estados vazios */
+        .empty-cell { text-align: center; }
+        .empty-state {
+            padding: 42px 20px;
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .empty-state i { font-size: 2.2rem; color: rgba(212, 175, 55, 0.35); }
+
+        /* Toasts clicáveis */
+        .toast-item { cursor: pointer; }
+
+        /* Botões */
+        .btn:disabled { opacity: 0.55; pointer-events: none; }
+        .btn:active { transform: translateY(0) scale(0.98); }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fa-spin-fast { animation: spin 0.7s linear infinite; }
+
+        .chip-btn { transition: var(--transition); }
+        .chip-btn:hover { transform: translateY(-1px); }
+
+        /* Sub-abas do relatório */
+        .rel-subtabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 4px 0 20px;
+        }
+        .rel-subtab {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 16px;
+            border-radius: 999px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card-secondary);
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .rel-subtab i { color: var(--text-dim); transition: var(--transition); }
+        .rel-subtab:hover { border-color: var(--border-gold); color: var(--text-main); }
+        .rel-subtab.active {
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(212, 175, 55, 0.08));
+            border-color: var(--border-gold-bright);
+            color: var(--gold-light);
+        }
+        .rel-subtab.active i { color: var(--gold-primary); }
+        .rel-subaba { animation: fadeIn 0.25s ease; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        /* ============ TABLET / MOBILE ============ */
+        @media (max-width: 1024px) {
+            .app-container { display: block; }
+
+            .sidebar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                top: auto;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                align-items: center;
+                background: rgba(11, 14, 20, 0.92);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border-right: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.08);
+                z-index: 200;
+                padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+            }
+
+            .sidebar::before { display: none; }
+            .sidebar-brand,
+            .sidebar-footer { display: none; }
+
+            .sidebar-nav {
+                flex-direction: row;
+                gap: 2px;
+                padding: 0;
+                overflow-x: auto;
+                width: 100%;
+            }
+
+            .sidebar-nav .nav-tab {
+                flex: 1 0 auto;
+                min-width: 62px;
+                flex-direction: column;
+                gap: 3px;
+                padding: 8px 4px;
+                justify-content: center;
+                font-size: 0.6rem;
+                border-radius: 12px;
+                border: none;
+                background: transparent;
+            }
+
+            .sidebar-nav .nav-tab i {
+                width: auto;
+                height: auto;
+                background: transparent;
+                font-size: 1.05rem;
+            }
+
+            .sidebar-nav .nav-tab:hover { background: rgba(255, 255, 255, 0.04); }
+
+            .sidebar-nav .nav-tab.active {
+                background: rgba(212, 175, 55, 0.12);
+                border-left: none;
+                box-shadow: none;
+            }
+
+            .sidebar-nav .nav-tab.active i { background: transparent; }
+
+            .sidebar-nav .nav-tab.nav-tab-relatorio {
+                border: none;
+                background: transparent;
+            }
+
+            .sidebar-nav .nav-tab.nav-tab-relatorio.active {
+                background: rgba(212, 175, 55, 0.14);
+            }
+
+            .lbl-full { display: none !important; }
+            .lbl-short { display: inline !important; }
+
+            .main-panel { padding-bottom: 74px; }
+            .top-header { padding: 12px 16px; }
+            .topbar-titles p { display: none; }
+            .topbar-titles h2 { font-size: 0.95rem; }
+            .status-badge { padding: 7px 12px; font-size: 0.72rem; }
+            .live-clock-badge { padding: 7px 12px; font-size: 0.75rem; }
+            .main-content { padding: 22px 16px 32px; }
+            .pos-grid { gap: 20px; }
+            .live-preview-card { position: static; }
+        }
+
+        @media (max-width: 640px) {
+            .dono-text { display: none; }
+            .status-badge { padding: 7px 11px; }
+            .main-content { padding: 18px 12px 30px; }
+            .section-header h2 { font-size: 1.15rem; }
+            .top-header { padding: 10px 12px; }
+            .header-meta { gap: 8px; }
+            .live-clock-badge { font-size: 0.7rem; padding: 6px 10px; }
+        }
     </style>
     <link rel="stylesheet" href="owner-ui.css">
 </head>
@@ -1338,56 +1713,83 @@
     <div id="toast-container" class="toast-container"></div>
 
     <div class="app-container">
-        
-        <!-- Header Superior -->
-        <header class="top-header">
-            <div class="brand-wrapper">
+
+        <!-- Sidebar de Navegação -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
                 <div class="brand-icon">
                     <img src="assets/logo.png" alt="Barbearia Michael Barber" class="brand-logo">
                 </div>
                 <div class="brand-text">
                     <h1>Michael Barber</h1>
-                    <p><i class="fas fa-crown" style="color: var(--gold-primary);"></i> Sistema de Gestão Premium</p>
+                    <p><i class="fas fa-crown" style="color: var(--gold-primary);"></i> Gestão Premium</p>
                 </div>
             </div>
 
-            <div class="header-meta">
-                <div id="btn-dono-badge" class="donos-status-badge" onclick="toggleAcessoDono()" title="Área do Dono" style="display:none;">
-                    <i class="fas fa-crown" style="color: var(--gold-primary);"></i>
-                    <span>Dono</span>
-                </div>
-                <div class="live-clock-badge">
-                    <i class="far fa-clock"></i>
-                    <span id="live-clock">--:--:--</span>
-                </div>
-                <div class="status-badge" id="status-badge-dono" style="cursor:pointer;" onclick="toggleAcessoDono()" title="Área do Dono (Relatórios protegidos)">
-                    <span class="status-dot"></span>
-                    <span><i class="fas fa-lock"></i> Área do Dono</span>
+            <nav class="sidebar-nav navigation-tabs">
+                <button class="nav-tab active" onclick="showTab('atendimento')">
+                    <i class="fas fa-cash-register"></i>
+                    <span class="lbl-full">Caixa &amp; Atendimento</span>
+                    <span class="lbl-short">Caixa</span>
+                </button>
+                <button class="nav-tab" onclick="showTab('historico')">
+                    <i class="fas fa-history"></i>
+                    <span class="lbl-full">Histórico</span>
+                    <span class="lbl-short">Histórico</span>
+                </button>
+                <button class="nav-tab" onclick="showTab('barbeiros')">
+                    <i class="fas fa-users"></i>
+                    <span class="lbl-full">Barbeiros</span>
+                    <span class="lbl-short">Equipe</span>
+                </button>
+                <button class="nav-tab" onclick="showTab('servicos')">
+                    <i class="fas fa-scissors"></i>
+                    <span class="lbl-full">Serviços</span>
+                    <span class="lbl-short">Serviços</span>
+                </button>
+                <button class="nav-tab nav-tab-relatorio" id="nav-tab-relatorio" style="display:none;" onclick="showTab('relatorio')">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="lbl-full">Relatórios Financeiros</span>
+                    <span class="lbl-short">Relatórios</span>
+                </button>
+                <button class="nav-tab nav-tab-relatorio" id="nav-tab-historico-dono" style="display:none;" onclick="showTab('historico-dono')">
+                    <i class="fas fa-clock-rotate-left"></i>
+                    <span class="lbl-full">Histórico do Dono</span>
+                    <span class="lbl-short">Hist. Dono</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-version">
+                    <i class="fas fa-bolt"></i>
+                    <span><strong>100% offline</strong> · rodando no pen drive</span>
                 </div>
             </div>
-        </header>
+        </aside>
 
-        <!-- Navegação em Abas -->
-        <nav class="navigation-tabs">
-            <button class="nav-tab active" onclick="showTab('atendimento')">
-                <i class="fas fa-cash-register"></i> Caixa & Atendimento
-            </button>
-            <button class="nav-tab" onclick="showTab('historico')">
-                <i class="fas fa-history"></i> Histórico
-            </button>
-            <button class="nav-tab" onclick="showTab('barbeiros')">
-                <i class="fas fa-users"></i> Barbeiros
-            </button>
-            <button class="nav-tab" onclick="showTab('servicos')">
-                <i class="fas fa-scissors"></i> Serviços
-            </button>
-            <button class="nav-tab nav-tab-relatorio" id="nav-tab-relatorio" style="display:none;" onclick="showTab('relatorio')">
-                <i class="fas fa-chart-line"></i> Relatórios Financeiros
-            </button>
-            <button class="nav-tab nav-tab-relatorio" id="nav-tab-historico-dono" style="display:none;" onclick="showTab('historico-dono')">
-                <i class="fas fa-clock-rotate-left"></i> Histórico do Dono
-            </button>
-        </nav>
+        <!-- Painel Principal -->
+        <div class="main-panel">
+            <header class="top-header">
+                <div class="topbar-titles">
+                    <h2 id="topbar-title">Caixa &amp; Atendimento</h2>
+                    <p id="topbar-subtitle">Registrar atendimento e calcular comissões</p>
+                </div>
+
+                <div class="header-meta">
+                    <div id="btn-dono-badge" class="donos-status-badge" onclick="toggleAcessoDono()" title="Área do Dono" style="display:none;">
+                        <i class="fas fa-crown" style="color: var(--gold-primary);"></i>
+                        <span class="dono-text">Dono</span>
+                    </div>
+                    <div class="live-clock-badge">
+                        <i class="far fa-clock"></i>
+                        <span id="live-clock">--:--:--</span>
+                    </div>
+                    <div class="status-badge" id="status-badge-dono" style="cursor:pointer;" onclick="toggleAcessoDono()" title="Área do Dono (Relatórios protegidos)">
+                        <span class="status-dot"></span>
+                        <span><i class="fas fa-lock"></i> <span class="dono-text">Área do Dono</span></span>
+                    </div>
+                </div>
+            </header>
 
         <!-- Conteúdo Principal -->
         <main class="main-content">
@@ -1549,51 +1951,60 @@
                     </div>
                 </div>
 
-                <!-- KPIs Gerais -->
-                <div class="kpi-grid" id="stats-geral"></div>
-
-                <!-- Cards por Colaborador -->
-                <div class="card-header-title">
-                    <i class="fas fa-award"></i> Desempenho Individual por Colaborador
+                <!-- Sub-abas de visualização do relatório -->
+                <div class="rel-subtabs">
+                    <button class="rel-subtab active" data-subtab="resumo" onclick="mostrarSubAbaRelatorio('resumo')"><i class="fas fa-chart-pie"></i> Resumo</button>
+                    <button class="rel-subtab" data-subtab="equipe" onclick="mostrarSubAbaRelatorio('equipe')"><i class="fas fa-users"></i> Equipe</button>
+                    <button class="rel-subtab" data-subtab="financeiro" onclick="mostrarSubAbaRelatorio('financeiro')"><i class="fas fa-scale-balanced"></i> Financeiro</button>
                 </div>
-                <div class="colaboradores-grid" id="stats-colaboradores"></div>
+                <!-- RESUMO -->
+                <div class="rel-subaba" id="rel-sub-resumo" data-tab="resumo">
+                    <div class="kpi-grid" id="stats-geral"></div>
 
-                <!-- Tabela e Gráfico -->
-                <div class="form-grid-2" style="align-items: start; margin-top: 10px;">
-                    <div>
-                        <div class="card-header-title">
-                            <i class="fas fa-table"></i> Detalhamento Financeiro
-                        </div>
-                        <div class="table-responsive">
-                            <table id="table-relatorio-detalhado">
-                                <thead>
-                                    <tr>
-                                        <th>Colaborador</th>
-                                        <th>Atendimentos</th>
-                                        <th>Total com tinta</th>
-                                        <th>Tinta incluída</th>
-                                        <th>Comissão Paga</th>
-                                        <th>Parte Barbearia</th>
-                                        <th>Participação</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
+                </div>
 
-                    <div>
-                        <div class="card-header-title">
-                            <i class="fas fa-chart-donut"></i> Gráfico de Participação
-                        </div>
-                        <div class="custom-card" style="text-align: center; padding: 20px;">
-                            <canvas id="chart-participacao" style="max-height: 340px; width: 100%;"></canvas>
-                        </div>
+                <!-- EQUIPE -->
+                <div class="rel-subaba" id="rel-sub-equipe" data-tab="equipe" style="display: none;">
+                    <div class="card-header-title">
+                        <i class="fas fa-award"></i> Desempenho Individual por Colaborador
                     </div>
+                    <div class="colaboradores-grid" id="stats-colaboradores"></div>
+
+                    <div class="card-header-title" style="margin-top: 22px;">
+                        <i class="fas fa-table"></i> Detalhamento Financeiro
+                    </div>
+                    <div class="table-responsive">
+                        <table id="table-relatorio-detalhado">
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Atendimentos</th>
+                                    <th>Total com tinta</th>
+                                    <th>Tinta incluída</th>
+                                    <th>Comissão Paga</th>
+                                    <th>Parte Barbearia</th>
+                                    <th>Participação</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- FINANCEIRO -->
+                <div class="rel-subaba" id="rel-sub-financeiro" data-tab="financeiro" style="display: none;">
+                    <div class="financeiro-intro">
+                        <div>
+                            <h3><i class="fas fa-scale-balanced"></i> Visão financeira</h3>
+                            <p>Recebimentos, despesas e saldo operacional do período selecionado.</p>
+                        </div>
+                        <span class="financeiro-periodo-badge"><i class="fas fa-calendar-days"></i> Mesmo período do relatório</span>
+                    </div>
+                    <div id="financeiro-extra" class="financeiro-dashboard"></div>
                 </div>
             </section>
 
-            <!-- 3. SEÇÃO HISTÓRICO -->
+            <!-- 4. SEÇÃO HISTÓRICO -->
             <section id="historico" class="tab-section">
                 <div class="section-header">
                     <div>
@@ -1634,8 +2045,10 @@
                     <button class="chip-btn" onclick="selectPeriodoHistoricoDono('mes')">Este Mês</button>
                 </div>
 
-                <div class="table-responsive">
-                    <table id="table-historico-dono">
+                <div class="historico-dono-status" id="historico-dono-status" aria-live="polite"></div>
+
+                <div class="table-responsive owner-history-table-wrap">
+                    <table id="table-historico-dono" class="owner-history-table">
                         <thead>
                             <tr>
                                 <th>Data & Hora</th>
@@ -1784,6 +2197,24 @@
             </section>
 
         </main>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="modal-confirmar" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-triangle-exclamation" style="color: var(--ruby);"></i> Confirmar ação</h3>
+                <button class="modal-close-btn" onclick="fecharModalConfirmar()"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="confirm-mensagem" style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 26px;"></div>
+            <div style="display:flex; gap: 12px;">
+                <button class="btn btn-danger" id="confirm-botao-sim" style="flex: 1;">
+                    <i class="fas fa-trash-alt"></i> Sim, confirmar
+                </button>
+                <button class="btn btn-outline" onclick="fecharModalConfirmar()" style="flex: 1;">Cancelar</button>
+            </div>
+        </div>
     </div>
 
     <!-- Modais de Edição -->
@@ -2175,29 +2606,53 @@
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `toast-item toast-${type}`;
-            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            const tipo = (type === 'error' || type === 'erro') ? 'error' : 'success';
+            toast.className = `toast-item toast-${tipo}`;
+            const icon = tipo === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
             
             toast.innerHTML = `
                 <i class="fas ${icon} toast-icon"></i>
                 <div style="flex: 1;">${escapeHtml(message)}</div>
             `;
             
+            toast.addEventListener('click', () => {
+                toast.style.animation = 'fadeOutRight 0.3s ease-out forwards';
+                setTimeout(() => toast.remove(), 300);
+            });
             container.appendChild(toast);
-            
+
             setTimeout(() => {
                 toast.style.animation = 'fadeOutRight 0.3s ease-out forwards';
                 setTimeout(() => toast.remove(), 300);
             }, 3500);
         }
 
+        // Título dinâmico da barra superior
+        const TITULOS_TOPBAR = {
+            'atendimento': ['Caixa & Atendimento', 'Registrar atendimento e calcular comissões'],
+            'historico': ['Histórico', 'Atendimentos registrados hoje'],
+            'barbeiros': ['Gestão da Equipe', 'Cadastro e comissões dos profissionais'],
+            'servicos': ['Catálogo de Serviços', 'Preços, descrições e permissões'],
+            'relatorio': ['Relatórios Financeiros', 'Faturamento, comissões e lucratividade'],
+            'historico-dono': ['Histórico do Dono', 'Todos os atendimentos por período'],
+            'gastos': ['Gastos da Barbearia', 'Despesas e retiradas do dono']
+        };
+
+        function atualizarTopbar(tabName) {
+            const dados = TITULOS_TOPBAR[tabName] || ['', ''];
+            const titulo = document.getElementById('topbar-title');
+            const subtitulo = document.getElementById('topbar-subtitle');
+            if (titulo) titulo.textContent = dados[0];
+            if (subtitulo) subtitulo.textContent = dados[1];
+        }
+
         // Navegação em Abas
         function showTab(tabName, save = true) {
-            if (['barbeiros','servicos','relatorio','historico-dono','gastos','backups'].includes(tabName) && !relatorioToken()) {
+            atualizarTopbar(tabName);
+            if (['barbeiros','servicos','relatorio','historico-dono','gastos'].includes(tabName) && !relatorioToken()) {
                 abrirModalSenhaRelatorio(); showTab('atendimento', false); return;
             }
             if (tabName === 'gastos' && typeof loadGastos === 'function') loadGastos();
-            if (tabName === 'backups' && typeof loadBackups === 'function') loadBackups();
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
             
@@ -2253,7 +2708,7 @@
         function atualizarUIacessoDono() {
             const temToken = !!relatorioToken();
             document.querySelectorAll('.nav-tab').forEach(button => {
-                if (['barbeiros','servicos','gastos','backups'].some(tab => button.getAttribute('onclick')?.includes("'"+tab+"'"))) button.style.display = temToken ? '' : 'none';
+                if (['barbeiros','servicos','gastos'].some(tab => button.getAttribute('onclick')?.includes("'"+tab+"'"))) button.style.display = temToken ? '' : 'none';
             });
             const navRelatorio = document.getElementById('nav-tab-relatorio');
             const navHistoricoDono = document.getElementById('nav-tab-historico-dono');
@@ -2264,8 +2719,8 @@
             if (badgeDono) badgeDono.style.display = temToken ? '' : 'none';
             if (statusBadge) {
                 statusBadge.innerHTML = temToken
-                    ? '<i class="fas fa-lock-open"></i> Área do Dono'
-                    : '<i class="fas fa-lock"></i> Área do Dono';
+                    ? '<span><i class="fas fa-lock-open"></i> <span class="dono-text">Área do Dono</span></span>'
+                    : '<span><i class="fas fa-lock"></i> <span class="dono-text">Área do Dono</span></span>';
             }
         }
 
@@ -2294,8 +2749,6 @@
             if (typeof limparAreaDono === 'function') limparAreaDono();
             showTab('atendimento', false);
             for (const selector of ['#stats-geral', '#stats-colaboradores', '#table-relatorio-detalhado tbody', '#table-historico-dono tbody']) document.querySelector(selector).replaceChildren();
-            const canvas = document.getElementById('chart-participacao');
-            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
             atualizarUIacessoDono();
         }
 
@@ -2505,7 +2958,8 @@
                     inputNome.value = `Colaborador ${proximoNumero}`;
                 }
                 const tbody = document.querySelector('#table-barbeiros tbody');
-                tbody.innerHTML = cachedBarbeiros.map((b, idx) => `
+                tbody.innerHTML = cachedBarbeiros.length
+                    ? cachedBarbeiros.map((b, idx) => `
                     <tr>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
@@ -2535,7 +2989,8 @@
                             </div>
                         </td>
                     </tr>
-                `).join('');
+                `).join('')
+                    : htmlVazio(4, 'fa-user-slash', 'Nenhum profissional cadastrado ainda. Cadastre o primeiro acima.');
             } catch (err) {
                 console.error('Erro ao carregar barbeiros:', err);
             }
@@ -2547,7 +3002,8 @@
                 const res = await fetch(`${API_URL}/servicos`);
                 cachedServicos = await res.json();
                 const tbody = document.querySelector('#table-servicos tbody');
-                tbody.innerHTML = cachedServicos.map(s => {
+                tbody.innerHTML = cachedServicos.length
+                    ? cachedServicos.map(s => {
                     const restrictionBadge = s.apenas_dono 
                         ? `<span class="badge badge-red"><i class="fas fa-lock"></i> Apenas Dono</span>` 
                         : `<span class="badge badge-green"><i class="fas fa-globe"></i> Todos</span>`;
@@ -2575,7 +3031,8 @@
                         </td>
                     </tr>
                 `;
-                }).join('');
+                }).join('')
+                    : htmlVazio(5, 'fa-scissors', 'Nenhum serviço cadastrado ainda. Cadastre o primeiro acima.');
             } catch (err) {
                 console.error('Erro ao carregar serviços:', err);
             }
@@ -2668,6 +3125,14 @@
         let histDonoPeriodo = '';
         let histDonoInicio = '';
         let histDonoFim = '';
+        let histDonoRequest = 0;
+
+        function atualizarStatusHistoricoDono(texto, tipo = '') {
+            const status = document.getElementById('historico-dono-status');
+            if (!status) return;
+            status.className = 'historico-dono-status' + (tipo ? ' ' + tipo : '');
+            status.innerHTML = texto ? '<i class="fas ' + (tipo === 'loading' ? 'fa-spinner fa-spin' : tipo === 'error' ? 'fa-triangle-exclamation' : 'fa-circle-info') + '"></i><span>' + escapeHtml(texto) + '</span>' : '';
+        }
 
         function selectPeriodoHistoricoDono(periodo) {
             histDonoPeriodo = periodo;
@@ -2694,27 +3159,45 @@
                 selectPeriodoHistoricoDono('hoje');
                 return;
             }
+            const requestAtual = ++histDonoRequest;
+            const tbody = document.querySelector('#table-historico-dono tbody');
+            atualizarStatusHistoricoDono('Atualizando atendimentos do período…', 'loading');
+            if (tbody) tbody.innerHTML = htmlVazio(9, 'fa-spinner fa-spin', 'Carregando histórico…');
             try {
                 const query = new URLSearchParams();
                 if(histDonoInicio)query.set('data_inicio',histDonoInicio);
                 if(histDonoFim)query.set('data_fim',histDonoFim);
                 const url = API_URL+'/relatorio/atendimentos?'+query;
                 const res = await fetch(url, { headers: { 'X-Relatorio-Token': tokenSolicitado } });
-                if (tokenSolicitado !== relatorioToken()) return;
+                if (requestAtual !== histDonoRequest || tokenSolicitado !== relatorioToken()) return;
                 if (res.status === 401) { removerTokenRelatorio(); abrirModalSenhaRelatorio(); return; }
                 if (!res.ok) throw new Error('Falha ao carregar histórico.');
                 const atendimentos = await res.json();
-                if (tokenSolicitado !== relatorioToken()) return;
-                renderLinhasHistorico(atendimentos, document.querySelector('#table-historico-dono tbody'), 'Nenhum atendimento registrado no período.');
+                if (requestAtual !== histDonoRequest || tokenSolicitado !== relatorioToken()) return;
+                renderLinhasHistorico(atendimentos, tbody, 'Nenhum atendimento registrado no período.');
             } catch (err) {
+                if (requestAtual !== histDonoRequest) return;
+                if (tbody) tbody.innerHTML = htmlVazio(9, 'fa-triangle-exclamation', 'Não foi possível carregar o histórico.');
+                atualizarStatusHistoricoDono('Não foi possível carregar o histórico. Tente novamente.', 'error');
                 showToast('Não foi possível carregar o histórico do dono.', 'error');
             }
         }
 
+        function htmlVazio(colspan, icon, texto) {
+            return `<tr><td colspan="${colspan}" class="empty-cell">
+                <div class="empty-state">
+                    <i class="fas ${icon}"></i>
+                    <span>${texto}</span>
+                </div>
+            </td></tr>`;
+        }
+
         function renderLinhasHistorico(atendimentos, tbody, msgVazia) {
+            if (!tbody) return;
             const owner = tbody.closest('table').id === 'table-historico-dono';
             if (atendimentos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${owner ? 9 : 6}" style="text-align:center; padding: 30px; color: var(--text-muted);">${msgVazia}</td></tr>`;
+                tbody.innerHTML = htmlVazio(owner ? 9 : 6, 'fa-inbox', msgVazia);
+                if (owner) atualizarStatusHistoricoDono('Nenhum atendimento encontrado no período selecionado.', 'empty');
                 return;
             }
 
@@ -2753,6 +3236,10 @@
                 </tr>
             `;
             }).join('');
+            if (owner) {
+                const total = atendimentos.reduce((sum, atendimento) => sum + Number(atendimento.valor_cobrado || 0) + Number(atendimento.valor_tinta || 0), 0);
+                atualizarStatusHistoricoDono(atendimentos.length + (atendimentos.length === 1 ? ' atendimento encontrado' : ' atendimentos encontrados') + ' • Total recebido: ' + total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 'success');
+            }
             tbody.querySelectorAll('[data-editar-atendimento]').forEach(button => button.addEventListener('click',()=>abrirEdicaoAtendimento(atendimentos[Number(button.dataset.editarAtendimento)])));
             tbody.querySelectorAll('[data-excluir-atendimento]').forEach(botao => {
                 botao.addEventListener('click', () => {
@@ -2792,6 +3279,7 @@
         }
 
         // Relatórios Financeiros
+        let relatorioCache = null;
         async function loadRelatorio() {
             const tokenSolicitado = relatorioToken();
             if (!tokenSolicitado) return;
@@ -2826,12 +3314,19 @@
                 const relatorio = await resComissoes.json();
                 const geral = await resGeral.json();
                 if (tokenSolicitado !== relatorioToken()) return;
+                relatorioCache = relatorio;
                 
                 // Renderizar KPIs Gerais
                 const containerGeral = document.getElementById('stats-geral');
                 containerGeral.innerHTML = `
-                    <div class="kpi-card"><div class="kpi-top"><span class="kpi-title">Atendimentos do dono</span></div><div class="kpi-value">R$ ${(geral.total_comissao_dono || 0).toFixed(2)}</div><div class="kpi-footer">100% dos serviços e tintas que ele atende</div></div>
-                    <div class="kpi-card"><div class="kpi-top"><span class="kpi-title">Total destinado ao dono</span></div><div class="kpi-value">R$ ${((geral.total_comissao_dono || 0) + (geral.total_barbearia || 0)).toFixed(2)}</div><div class="kpi-footer">Atendimentos próprios + parte da barbearia, antes de despesas</div></div>
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <span class="kpi-title">Total destinado ao dono</span>
+                            <div class="kpi-icon-badge kpi-icon-gold"><i class="fas fa-crown"></i></div>
+                        </div>
+                        <div class="kpi-value" style="color: var(--gold-light);">R$ ${((geral.total_comissao_dono || 0) + (geral.total_barbearia || 0)).toFixed(2)}</div>
+                        <div class="kpi-footer"><i class="fas fa-coins"></i> Atendimentos próprios + parte da barbearia, antes de despesas</div>
+                    </div>
                                         <div class="kpi-card">
                         <div class="kpi-top">
                             <span class="kpi-title">Faturamento Total</span>
@@ -2855,14 +3350,6 @@
                         </div>
                         <div class="kpi-value" style="color: var(--sapphire);">R$ ${(geral.total_barbearia || 0).toFixed(2)}</div>
                         <div class="kpi-footer"><i class="fas fa-chart-line"></i> Após comissões, antes de despesas</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <span class="kpi-title">Receita de Tintas</span>
-                            <div class="kpi-icon-badge kpi-icon-amber"><i class="fas fa-paint-brush"></i></div>
-                        </div>
-                        <div class="kpi-value" style="color: var(--amber);">R$ ${(geral.total_tinta || 0).toFixed(2)}</div>
-                        <div class="kpi-footer"><i class="fas fa-spray-can"></i> Pigmentações adicionais</div>
                     </div>
                 `;
                 
@@ -2897,7 +3384,8 @@
                 // Tabela Detalhada
                 const totalGeral = (geral.total_geral + geral.total_tinta) || 1;
                 const tbody = document.querySelector('#table-relatorio-detalhado tbody');
-                tbody.innerHTML = relatorio.map(r => {
+                tbody.innerHTML = relatorio.length
+                    ? relatorio.map(r => {
                     const faturado = (r.total_faturado || 0) + (r.total_tinta || 0);
                     const participacao = totalGeral > 0 ? ((faturado / totalGeral) * 100).toFixed(1) : 0;
                     return `
@@ -2923,70 +3411,18 @@
                         </td>
                     </tr>
                 `;
-                }).join('');
+                }).join('')
+                    : htmlVazio(7, 'fa-chart-simple', 'Sem dados para exibir neste período.');
                 
-                renderChart(relatorio);
             } catch (err) {
                 showToast(err.message || 'Erro ao carregar relatório.', 'error');
             }
         }
         
-        // Gráfico Donut Moderno
-        function renderChart(data) {
-            const canvas = document.getElementById('chart-participacao');
-            if (!canvas || canvas.offsetWidth < 80) return;
-            const ctx = canvas.getContext('2d');
-            
-            canvas.width = canvas.offsetWidth;
-            canvas.height = 340;
-            
-            const colors = ['#d4af37', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
-            const total = data.reduce((sum, r) => sum + (r.total_faturado || 0) + (r.total_tinta || 0), 0);
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (total === 0) {
-                ctx.fillStyle = '#64748b';
-                ctx.font = '15px Plus Jakarta Sans';
-                ctx.textAlign = 'center';
-                ctx.fillText('Nenhum dado faturado no período', canvas.width / 2, canvas.height / 2);
-                return;
-            }
-            
-            let currentAngle = -Math.PI / 2;
-            const centerX = canvas.width / 2;
-            const centerY = (canvas.height / 2) - 20;
-            const outerRadius = Math.min(centerX, centerY) - 25;
-            const innerRadius = outerRadius * 0.6;
-            
-            data.forEach((r, i) => {
-                const value = (r.total_faturado || 0) + (r.total_tinta || 0);
-                if (value <= 0) return;
-                const sliceAngle = (value / total) * 2 * Math.PI;
-                
-                // Donut Slice
-                ctx.fillStyle = colors[i % colors.length];
-                ctx.beginPath();
-                ctx.arc(centerX, centerY, outerRadius, currentAngle, currentAngle + sliceAngle);
-                ctx.arc(centerX, centerY, innerRadius, currentAngle + sliceAngle, currentAngle, true);
-                ctx.closePath();
-                ctx.fill();
-                
-                ctx.strokeStyle = '#121620';
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                
-                currentAngle += sliceAngle;
-            });
-
-            // Centro do Donut
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 16px Outfit';
-            ctx.textAlign = 'center';
-            ctx.fillText(`R$ ${total.toFixed(2)}`, centerX, centerY + 2);
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '11px Plus Jakarta Sans';
-            ctx.fillText('Faturado', centerX, centerY + 18);
+        // Sub-abas do relatório
+        function mostrarSubAbaRelatorio(nome) {
+            document.querySelectorAll('.rel-subtab').forEach(b => b.classList.toggle('active', b.dataset.subtab === nome));
+            document.querySelectorAll('.rel-subaba').forEach(d => d.style.display = d.dataset.tab === nome ? '' : 'none');
         }
 
         // Filtro em Chips
@@ -3041,6 +3477,10 @@
                 showToast('Adicione pelo menos um serviço.', 'error');
                 return;
             }
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            const btnHTML = btnSubmit.innerHTML;
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin-fast"></i> Registrando...';
             const observacao = document.getElementById('atend-obs').value;
             const pigmentacao = document.getElementById('atend-pigmentacao').checked;
             const valor_tinta = parseFloat(document.getElementById('atend-valor-tinta').value || 0);
@@ -3076,6 +3516,9 @@
                 }
             } catch (err) {
                 showToast('Falha na comunicação com o servidor', 'error');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = btnHTML;
             }
         });
 
@@ -3132,21 +3575,33 @@
             }
         });
 
-        async function deleteBarbeiro(id) {
-            if (confirm('Deseja realmente desativar este barbeiro?')) {
-                if (!await salvarAlteracao(`${API_URL}/barbeiros/${id}`, { method: 'DELETE' })) return;
-                showToast('Barbeiro desativado.', 'success');
-                loadBarbeiros();
-            }
+        function deleteBarbeiro(id) {
+            const barbeiro = cachedBarbeiros.find(b => b.id == id);
+            mostrarConfirmacao(
+                barbeiro
+                    ? `Desativar o profissional "<strong>${escapeHtml(barbeiro.nome)}</strong>"? Ele deixará de aparecer nos atendimentos.`
+                    : 'Desativar este barbeiro?',
+                async () => {
+                    if (!await salvarAlteracao(`${API_URL}/barbeiros/${id}`, { method: 'DELETE' })) return;
+                    showToast('Barbeiro desativado.', 'success');
+                    loadBarbeiros();
+                }
+            );
         }
 
-        async function deleteServico(id) {
-            if (cachedServicos.find(s => s.id === id)?.apenas_dono) { showToast("Serviços exclusivos do dono não podem ser excluídos.", "error"); return; }
-            if (confirm('Deseja realmente desativar este serviço?')) {
-                if (!await salvarAlteracao(`${API_URL}/servicos/${id}`, { method: 'DELETE', headers: { 'X-Relatorio-Token': relatorioToken() } })) return;
-                showToast('Serviço desativado.', 'success');
-                loadServicos();
-            }
+        function deleteServico(id) {
+            const servico = cachedServicos.find(s => s.id == id);
+            if (servico?.apenas_dono) { showToast("Serviços exclusivos do dono não podem ser excluídos.", "error"); return; }
+            mostrarConfirmacao(
+                servico
+                    ? `Desativar o serviço "<strong>${escapeHtml(servico.nome)}</strong>"?`
+                    : 'Desativar este serviço?',
+                async () => {
+                    if (!await salvarAlteracao(`${API_URL}/servicos/${id}`, { method: 'DELETE', headers: { 'X-Relatorio-Token': relatorioToken() } })) return;
+                    showToast('Serviço desativado.', 'success');
+                    loadServicos();
+                }
+            );
         }
 
         function atualizarAvatarEditModal() {
@@ -3230,6 +3685,26 @@
             closeEditServicoModal();
             showToast('Serviço atualizado!', 'success');
             loadServicos();
+        });
+
+        // Modal de confirmação de exclusão
+        let confirmCallback = null;
+
+        function mostrarConfirmacao(mensagem, acao) {
+            document.getElementById('confirm-mensagem').innerHTML = mensagem;
+            confirmCallback = acao;
+            document.getElementById('modal-confirmar').style.display = 'flex';
+        }
+
+        function fecharModalConfirmar() {
+            document.getElementById('modal-confirmar').style.display = 'none';
+            confirmCallback = null;
+        }
+
+        document.getElementById('confirm-botao-sim').addEventListener('click', () => {
+            const acao = confirmCallback;
+            fecharModalConfirmar();
+            if (acao) acao();
         });
 
         // Inicialização

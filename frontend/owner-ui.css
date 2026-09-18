@@ -10,8 +10,54 @@
 #financeiro-extra .kpi-value { font-size: clamp(1.3rem, 2.5vw, 2rem); }
 #table-gastos td, #table-historico-dono td { overflow-wrap: anywhere; }
 .owner-negative { color: #fda4af; }
+.financeiro-intro { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 4px 0 22px; padding: 18px 20px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: linear-gradient(120deg, rgba(212,175,55,.10), rgba(15,23,42,.30)); }
+.financeiro-intro h3 { display: flex; align-items: center; gap: 10px; color: var(--text-main); font-family: 'Outfit', sans-serif; font-size: 1.05rem; }
+.financeiro-intro h3 i { color: var(--gold-primary); }
+.financeiro-intro p, .financeiro-section-heading p { margin-top: 5px; color: var(--text-dim); font-size: .82rem; }
+.financeiro-periodo-badge { flex: none; color: var(--gold-light); border: 1px solid rgba(212,175,55,.25); border-radius: 999px; padding: 8px 12px; font-size: .75rem; font-weight: 700; }
+.financeiro-periodo-badge i { margin-right: 5px; }
+.financeiro-section { margin-bottom: 24px; }
+.financeiro-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.financeiro-section-heading h4 { color: var(--text-main); font-family: 'Outfit', sans-serif; font-size: 1rem; }
+.financeiro-kpis { margin-bottom: 0; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.financeiro-kpi { padding: 18px; }
+.financeiro-kpi .kpi-value { margin-top: 18px; font-size: clamp(1.25rem, 2.4vw, 1.8rem); }
+.financeiro-kpi .kpi-top { align-items: flex-start; }
+.financeiro-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; color: var(--gold-primary); background: rgba(212,175,55,.12); }
+.financeiro-kpi-blue .financeiro-icon { color: var(--sapphire); background: rgba(59,130,246,.12); }
+.financeiro-kpi-green .financeiro-icon { color: var(--emerald); background: rgba(16,185,129,.12); }
+.financeiro-kpi-red .financeiro-icon { color: #fb7185; background: rgba(244,63,94,.12); }
+.financeiro-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.financeiro-panel { padding: 20px; }
+.pagamentos-grid, .gastos-categoria-list { display: grid; gap: 10px; }
+.pagamento-item, .gasto-categoria-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-subtle); border-radius: 10px; background: rgba(255,255,255,.025); }
+.pagamento-item span, .gasto-categoria-item span { color: var(--text-muted); font-size: .85rem; }
+.pagamento-item span i { width: 20px; margin-right: 7px; color: var(--gold-primary); text-align: center; }
+.pagamento-item strong, .gasto-categoria-item strong { color: var(--text-main); font-size: .92rem; }
+.financeiro-empty { display: flex; align-items: center; gap: 10px; padding: 18px 0; color: var(--text-dim); font-size: .85rem; }
+.financeiro-empty i { color: var(--gold-primary); }
+.financeiro-note { display: flex; align-items: flex-start; gap: 8px; margin: 0; }
+.financeiro-note i { color: var(--gold-primary); margin-top: 3px; }
+.historico-dono-status { min-height: 20px; display: flex; align-items: center; gap: 8px; margin: -4px 0 12px; color: var(--text-dim); font-size: .82rem; }
+.historico-dono-status.success { color: var(--emerald); }
+.historico-dono-status.error { color: #fb7185; }
+.historico-dono-status.loading { color: var(--gold-light); }
+.owner-history-table th { white-space: normal; min-width: 112px; line-height: 1.35; }
+.owner-history-table th:first-child { min-width: 130px; }
+.owner-history-table th:nth-child(3) { min-width: 220px; }
+.owner-history-table td { vertical-align: top; }
+.owner-history-table-wrap { box-shadow: 0 8px 28px rgba(0,0,0,.16); }
 @media (max-width: 650px) { .owner-item { grid-template-columns: 1fr 1fr; } .owner-dialog { padding: 16px; } .owner-actions .btn { flex: 1; } }
 @media (max-width: 650px) {
+ .financeiro-intro { align-items: flex-start; flex-direction: column; padding: 16px; }
+ .financeiro-periodo-badge { white-space: normal; }
+ .financeiro-columns { grid-template-columns: 1fr; gap: 14px; }
+ .financeiro-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+ .financeiro-kpi { padding: 14px; }
+ .financeiro-kpi .kpi-title { font-size: .7rem; }
+ .financeiro-kpi .kpi-value { font-size: 1.12rem; margin-top: 14px; }
+ .financeiro-icon { width: 28px; height: 28px; font-size: .8rem; }
+ .owner-history-table { min-width: 1040px; }
  .header-meta { flex-wrap: wrap; gap: 10px; max-width: 100%; }
  .top-header { padding: 20px; }
  .brand-icon { flex-shrink: 0; }

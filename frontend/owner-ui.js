@@ -5,7 +5,7 @@ const selectOptions = (values, current) => Object.entries(values).map(([value,la
 let gastosUI = [], servicosEdicaoUI = [], atendimentoEdicaoUI = null, sequenciaGastos = 0;
 
 document.querySelector('.navigation-tabs').insertAdjacentHTML('beforeend',
-    '<button class="nav-tab" id="nav-tab-gastos" onclick="showTab(\'gastos\')" style="display:none">Gastos</button><button class="nav-tab" id="nav-tab-backups" onclick="showTab(\'backups\')" style="display:none">Backups</button>');
+    '<button class="nav-tab" id="nav-tab-gastos" onclick="showTab(\'gastos\')" style="display:none">Gastos</button>');
 document.querySelector('main').insertAdjacentHTML('beforeend', `
 <section class="tab-section" id="gastos">
  <div class="section-header"><div><h2>Gastos da barbearia</h2><p class="section-subtitle">Registre despesas e retiradas. Compra de tinta não altera comissões.</p></div></div>
@@ -17,13 +17,7 @@ document.querySelector('main').insertAdjacentHTML('beforeend', `
  </div>
  <div class="kpi-grid" id="gastos-resumo"></div>
  <div class="table-responsive"><table id="table-gastos"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Pagamento</th><th>Observação</th><th>Ações</th></tr></thead><tbody></tbody></table></div>
-</section>
-<section class="tab-section" id="backups">
- <h2>Backups</h2><p class="owner-note">Guarde uma cópia fora do computador ou pen drive. Os backups incluem todos os dados do banco; as fotos precisam ser copiadas separadamente.</p>
- <div class="owner-actions"><button class="btn btn-primary" id="criar-backup">Criar backup agora</button><button class="btn btn-outline" id="atualizar-backups">Atualizar lista</button></div>
- <div id="lista-backups"></div>
 </section>`);
-document.getElementById('stats-geral').insertAdjacentHTML('beforebegin', '<div id="financeiro-extra"></div>');
 document.querySelector('#historico-dono .period-chips').insertAdjacentHTML('afterend', `
 <div class="filters-bar"><div class="form-group"><label for="hist-inicio">De</label><input type="date" id="hist-inicio"></div><div class="form-group"><label for="hist-fim">Até</label><input type="date" id="hist-fim"></div><button class="btn btn-primary" id="hist-filtrar">Filtrar</button><button class="btn btn-outline" id="hist-tudo">Todo o período</button></div>`);
 document.body.insertAdjacentHTML('beforeend', `
@@ -67,14 +61,41 @@ function periodoUI(inicio,fim) {
 function mensagemErro(error){showToast(error.message || 'Falha de comunicação. Confira os dados antes de tentar novamente.','error');}
 function limparAreaDono() {
     sequenciaGastos++;gastosUI=[];servicosEdicaoUI=[];atendimentoEdicaoUI=null;
-    for(const selector of ['#financeiro-extra','#gastos-resumo','#table-gastos tbody','#lista-backups','#edicao-itens']) document.querySelector(selector)?.replaceChildren();
+    for(const selector of ['#financeiro-extra','#gastos-resumo','#table-gastos tbody','#table-historico-dono tbody','#historico-dono-status','#edicao-itens']) document.querySelector(selector)?.replaceChildren();
+    document.getElementById('historico-dono-status')?.classList.remove('success','error','loading');
     document.querySelectorAll('.owner-dialog').forEach(dialog=>{dialog.close();dialog.querySelector('form')?.reset();});
     for(const id of ['modal-editar-barbeiro','modal-editar-servico']) document.getElementById(id).style.display='none';
 }
 function renderFinanceiro(geral) {
-    const cards=[['Receitas de serviços',geral.total_geral],['Tinta cobrada',geral.total_tinta],['Total recebido',geral.total_recebido],['Gastos totais',geral.total_gastos],['Saldo operacional',geral.saldo_operacional]];
-    for(const [method,label] of Object.entries(pagamentosUI)) cards.push([label+' recebido',(geral.pagamentos||[]).find(p=>p.metodo_pagamento===method)?.total || 0]);
-    document.getElementById('financeiro-extra').innerHTML='<div class="kpi-grid">'+cards.map(([label,value])=>'<div class="kpi-card"><div class="kpi-title">'+escapeHtml(label)+'</div><div class="kpi-value '+(Number(value)<0?'owner-negative':'')+'">'+moedaUI(value)+'</div></div>').join('')+'</div><p class="owner-note">Dinheiro, Pix e Cartão mostram receitas recebidas, antes de despesas. Saldo operacional = serviços + tinta cobrada − gastos. As comissões são apresentadas separadamente.</p><div class="custom-card"><h3>Gastos por categoria</h3>'+((geral.gastos_por_categoria||[]).map(g=>'<p>'+escapeHtml(g.categoria)+': <strong>'+moedaUI(g.total)+'</strong></p>').join('') || '<p>Nenhum gasto no período.</p>')+'</div>';
+    const container=document.getElementById('financeiro-extra');
+    if(!container)return;
+    const cards=[
+        ['Receitas de serviços',geral.total_geral,'fa-scissors','gold'],
+        ['Tinta cobrada',geral.total_tinta,'fa-droplet','blue'],
+        ['Total recebido',geral.total_recebido,'fa-wallet','green'],
+        ['Gastos totais',geral.total_gastos,'fa-arrow-trend-down','red'],
+        ['Saldo operacional',geral.saldo_operacional,'fa-scale-balanced','gold']
+    ];
+    const pagamentos=Object.entries(pagamentosUI).map(([method,label])=>({
+        method,label,total:(geral.pagamentos||[]).find(p=>p.metodo_pagamento===method)?.total || 0
+    }));
+    const categorias=geral.gastos_por_categoria||[];
+    container.innerHTML=`
+        <section class="financeiro-section">
+            <div class="financeiro-section-heading"><div><h4>Resumo do período</h4><p>Valores consolidados dos atendimentos e despesas.</p></div></div>
+            <div class="kpi-grid financeiro-kpis">${cards.map(([label,value,icon,tone])=>`<div class="kpi-card financeiro-kpi financeiro-kpi-${tone}"><div class="kpi-top"><span class="kpi-title">${escapeHtml(label)}</span><span class="financeiro-icon"><i class="fas ${icon}"></i></span></div><div class="kpi-value ${Number(value)<0?'owner-negative':''}">${moedaUI(value)}</div></div>`).join('')}</div>
+        </section>
+        <section class="financeiro-section financeiro-columns">
+            <div class="custom-card financeiro-panel">
+                <div class="financeiro-section-heading"><div><h4>Recebimentos por forma de pagamento</h4><p>Receita recebida antes das despesas.</p></div></div>
+                <div class="pagamentos-grid">${pagamentos.map(p=>`<div class="pagamento-item"><span><i class="fas ${p.method==='pix'?'fa-qrcode':p.method==='cartao'?'fa-credit-card':'fa-money-bill-wave'}"></i>${escapeHtml(p.label)}</span><strong>${moedaUI(p.total)}</strong></div>`).join('')}</div>
+            </div>
+            <div class="custom-card financeiro-panel">
+                <div class="financeiro-section-heading"><div><h4>Gastos por categoria</h4><p>Despesas registradas no mesmo período.</p></div></div>
+                <div class="gastos-categoria-list">${categorias.length ? categorias.map(g=>`<div class="gasto-categoria-item"><span>${escapeHtml(g.categoria)}</span><strong>${moedaUI(g.total)}</strong></div>`).join('') : '<div class="financeiro-empty"><i class="fas fa-receipt"></i><span>Nenhum gasto no período.</span></div>'}</div>
+            </div>
+        </section>
+        <p class="owner-note financeiro-note"><i class="fas fa-circle-info"></i> Saldo operacional = total recebido − gastos totais. As comissões são apresentadas separadamente na aba Equipe.</p>`;
 }
 async function loadGastos() {
     const seq=++sequenciaGastos;
@@ -166,21 +187,6 @@ document.getElementById('form-edicao-atendimento').addEventListener('submit',asy
         await Promise.all([loadHistoricoDono(),loadHistorico(),loadRelatorio()]);
     }catch(error){mensagemErro(error);}finally{button.disabled=false;}
 });
-async function loadBackups() {
-    try{
-        const rows=await ownerJson('/backup');if(!relatorioToken())return;
-        const box=document.getElementById('lista-backups');box.replaceChildren();
-        if(!rows.length){box.textContent='Nenhum backup disponível.';return;}
-        for(const file of rows){
-            const row=document.createElement('p'),button=document.createElement('button');
-            button.className='btn btn-outline btn-small';button.textContent='Baixar';row.append(document.createTextNode(file+' '),button);
-            button.onclick=async()=>{try{const blob=await (await ownerRequest('/backup?arquivo='+encodeURIComponent(file))).blob();const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=file;link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}catch(error){mensagemErro(error);}};
-            box.append(row);
-        }
-    }catch(error){mensagemErro(error);}
-}
-document.getElementById('criar-backup').onclick=async()=>{try{await ownerJson('/backup',{method:'POST',body:'{}'});showToast('Backup criado.','success');await loadBackups();}catch(error){mensagemErro(error);}};
-document.getElementById('atualizar-backups').onclick=loadBackups;
 document.getElementById('novo-gasto').onclick=()=>abrirGasto();
 document.getElementById('filtrar-gastos').onclick=loadGastos;
 document.getElementById('limpar-filtros-gastos').onclick=()=>{for(const id of ['gastos-inicio','gastos-fim','gastos-categoria'])document.getElementById(id).value='';loadGastos();};
@@ -190,4 +196,6 @@ document.getElementById('hist-filtrar').onclick=()=>{
 };
 document.getElementById('hist-tudo').onclick=()=>{histDonoInicio='';histDonoFim='';histDonoPeriodo='tudo';document.getElementById('hist-inicio').value='';document.getElementById('hist-fim').value='';loadHistoricoDono();};
 atualizarUIacessoDono();
-if(relatorioToken() && ['gastos','backups'].includes(localStorage.getItem('activeTab')))showTab(localStorage.getItem('activeTab'),false);
+if(relatorioToken() && ['gastos'].includes(localStorage.getItem('activeTab')))showTab(localStorage.getItem('activeTab'),false);
+
+function dataLocalISO(date) { return date.toISOString().slice(0, 10); }
