@@ -28,7 +28,7 @@ ONDE FICAM OS DADOS:
 ------------------------------------------------------------------------
 BACKUP (CÓPIA DE SEGURANÇA):
 ------------------------------------------------------------------------
-- Todo o sistema fica guardado em um ÚNICO arquivo:
+- Os dados estruturados ficam guardados em um arquivo; as fotos ficam em pasta separada:
   backend/barbearia.db  (barbeiros, serviços, atendimentos e senha).
 - PARA FAZER BACKUP: copie esse arquivo para outro lugar
   (e-mail, Google Drive, HD externo, outro pen drive).
@@ -102,7 +102,32 @@ PROTEÇÃO DA ABA RELATÓRIOS (ÁREA DO DONO):
   tem a senha do Dono consegue ver os relatórios financeiros.
 - PRIMEIRO USO: ao clicar em "Relatórios", o sistema pede para definir
   a senha do Dono (mínimo 4 caracteres). Defina e confirme.
-- Depois disso, toda vez que abrir "Relatórios" será pedida essa senha.
-- ESQUECEU A SENHA? Pode resetar apagando tudo, ou com o Dono definindo
-  novamente em outro navegador via o terminal/console - procure o Carlos.
-========================================================================
+- A sessão permanece até sair da Área do Dono, fechar a sessão do navegador ou reiniciar o servidor.
+- ESQUECEU A SENHA? Procure o responsável técnico. Com o sistema parado,
+  faça backup e remova somente a chave senha_dono da tabela config usando
+  uma ferramenta SQLite. Não apague o banco nem os atendimentos para isso.
+  Limpar atendimentos preserva a senha. Após o reset, defina a nova senha.
+
+EXCLUIR ATENDIMENTO:
+- No Histórico, clique em Excluir e confira os dados antes de confirmar.
+- Todos os itens, tinta e comissões desse atendimento saem dos relatórios.
+- Registros do dia podem ser excluídos pelo caixa; para dias anteriores,
+  use o Histórico do Dono após entrar com a senha.
+- A exclusão não pode ser desfeita pela tela.
+
+ENCERRAR E TRANSPORTAR:
+- Pressione ENTER na janela do iniciador e aguarde "Servidor encerrado".
+- Depois disso, remova o pen drive com segurança.
+- Leve a pasta inteira, incluindo bin/node.exe e backend/node_modules.
+- Preparar dependências pela primeira vez pode exigir internet; o uso do
+  pacote completo é offline. As fotos ficam em frontend/assets/perfil.
+
+RELATÓRIOS:
+- Faturamento total inclui serviços e tinta.
+- Comissões dos colaboradores não incluem os atendimentos próprios do dono.
+- Parte da barbearia = serviços + tinta - todas as comissões.
+- Total destinado ao dono = seus atendimentos + parte da barbearia.
+- Esses valores são anteriores às despesas; não representam lucro líquido.
+- Colaboradores inativos continuam nos relatórios dos períodos em que atenderam.
+
+Consulte CORRECOES.md para detalhes técnicos e testes.

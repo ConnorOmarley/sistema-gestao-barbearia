@@ -1,564 +1,263 @@
 import express from 'express';
-import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname, join, basename } from 'path';
-import { existsSync, readdirSync, writeFileSync, unlinkSync, mkdirSync } from 'fs';
+import { existsSync, readdirSync, mkdirSync } from 'fs';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
-import db, { saveDatabase, backupDatabase, backupsDir, getConfig, setConfig } from './database.js';
+import db, { backupDatabase, backupsDir, getConfig, setConfig, transaction, closeDatabase } from './database.js';
+import { invalid, id, name, percent, money, roundMoney, flag, isPigmentacao, period, dayBounds } from './rules.js';
+import { registerPhotoRoutes } from './photos.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
+const PORT = Number(process.env.PORT || 3000);
+app.use((req, res, next) => {
+  // The portable UI and API share an origin. Other websites must not operate the cash register.
+  const origin = req.headers.origin;
+  if (req.headers['sec-fetch-site'] === 'cross-site' ||
+      (origin && !['http://localhost:' + PORT, 'http://127.0.0.1:' + PORT].includes(origin))) {
+    return res.status(403).json({ error: 'Origem não autorizada.' });
+  }
+  if (!['localhost:' + PORT, '127.0.0.1:' + PORT].includes(req.headers.host)) return res.status(403).json({ error: 'Endereço não autorizado.' });
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  if (['POST', 'PUT'].includes(req.method) && (!req.body || typeof req.body !== 'object' || Array.isArray(req.body))) return res.status(400).json({ error: 'Envie um objeto JSON.' });
+  next();
+});
 app.use(express.static(join(__dirname, '../frontend')));
-
 const perfilDir = join(__dirname, '../frontend/assets/perfil');
-if (!existsSync(perfilDir)) {
-  mkdirSync(perfilDir, { recursive: true });
-}
-
-function exec(query, params = []) {
-  const result = db.exec(query, params);
-  saveDatabase();
-  return result;
-}
+mkdirSync(perfilDir, { recursive: true });
 
 function getAll(query, params = []) {
   const result = db.exec(query, params);
-  if (result.length === 0) return [];
-  const columns = result[0].columns;
-  const values = result[0].values;
-  return values.map(row => {
-    const obj = {};
-    columns.forEach((col, i) => obj[col] = row[i]);
-    return obj;
-  });
+  if (!result.length) return [];
+  return result[0].values.map(row => Object.fromEntries(result[0].columns.map((col, i) => [col, row[i]])));
 }
-
-function getOne(query, params = []) {
-  const results = getAll(query, params);
-  return results.length > 0 ? results[0] : null;
-}
-
-function run(query, params = []) {
+function getOne(query, params = []) { return getAll(query, params)[0] || null; }
+function change(query, params = []) { return transaction(() => db.run(query, params)); }
+function insert(query, params = []) {
   db.run(query, params);
-  const result = getAll('SELECT last_insert_rowid() as id');
-  saveDatabase();
-  return result[0].id;
+  return getOne('SELECT last_insert_rowid() AS id').id;
+}
+function active(table, value) {
+  const record = getOne('SELECT * FROM ' + table + ' WHERE id = ? AND ativo = 1', [id(value)]);
+  if (!record) invalid('Cadastro não encontrado ou inativo.', 404);
+  return record;
+}
+function getItensAtendimento(value) {
+  return getAll('SELECT i.*, s.nome AS servico_nome FROM atendimento_itens i JOIN servicos s ON s.id=i.servico_id WHERE i.atendimento_id=? ORDER BY i.id', [value]);
+}
+function listAtendimentos(filters, extra = '', extraParams = []) {
+  let sql = 'SELECT a.*,b.nome AS barbeiro_nome,b.is_dono AS barbeiro_is_dono,s.nome AS servico_nome FROM atendimentos a JOIN barbeiros b ON b.id=a.barbeiro_id JOIN servicos s ON s.id=a.servico_id WHERE 1=1' + extra;
+  const params = [...extraParams];
+  if (filters.data_inicio) { sql += ' AND a.data_hora >= ?'; params.push(filters.data_inicio); }
+  if (filters.data_fim) { sql += ' AND a.data_hora <= ?'; params.push(filters.data_fim); }
+  return getAll(sql + ' ORDER BY a.data_hora DESC,a.id DESC', params).map(a => ({ ...a, itens: getItensAtendimento(a.id) }));
+}
+const tokensRelatorio = new Set();
+function token(req) { return req.headers['x-relatorio-token']; }
+function isOwner(req) { return typeof token(req) === 'string' && tokensRelatorio.has(token(req)); }
+function requerAcessoRelatorio(req, res, next) {
+  if (!isOwner(req)) return res.status(401).json({ error: 'Acesso negado. Informe a senha do dono.' });
+  next();
+}
+function criarTokenRelatorio() {
+  const value = randomBytes(32).toString('hex');
+  tokensRelatorio.add(value);
+  return value;
 }
 
-function getItensAtendimento(id) {
-  return getAll(`
-    SELECT i.id, i.servico_id, i.valor_cobrado, i.valor_tinta, i.tem_pigmentacao, i.comissao_percentual, i.valor_comissao,
-           s.nome as servico_nome
-    FROM atendimento_itens i
-    JOIN servicos s ON i.servico_id = s.id
-    WHERE i.atendimento_id = ?
-    ORDER BY i.id
-  `, [id]);
-}
-
-app.get('/api/barbeiros', (req, res) => {
-  const barbeiros = getAll('SELECT * FROM barbeiros WHERE ativo = 1 ORDER BY is_dono DESC, id');
-  res.json(barbeiros);
-});
-
+app.get('/api/barbeiros', (req, res) => res.json(getAll('SELECT * FROM barbeiros WHERE ativo=1 ORDER BY is_dono DESC,id')));
 app.post('/api/barbeiros', (req, res) => {
-  const nome = (req.body.nome || '').trim();
-  const comissao_percentual = parseFloat(req.body.comissao_percentual) || 0;
-  const is_dono = req.body.is_dono ? 1 : 0;
-  const id = run('INSERT INTO barbeiros (nome, comissao_percentual, is_dono) VALUES (?, ?, ?)', [nome, comissao_percentual, is_dono]);
-  res.json({ id, nome, comissao_percentual, is_dono });
+  const nome = name(req.body.nome);
+  const comissao_percentual = percent(req.body.comissao_percentual);
+  if (flag(req.body.is_dono)) invalid('O dono já está cadastrado. Cadastre um colaborador.');
+  const value = transaction(() => insert('INSERT INTO barbeiros (nome,comissao_percentual,is_dono) VALUES (?,?,0)', [nome,comissao_percentual]));
+  res.json({ id: value, nome, comissao_percentual, is_dono: 0 });
 });
-
 app.put('/api/barbeiros/:id', (req, res) => {
-  const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ?', [req.params.id]);
-  const nome = (req.body.nome || barbeiro.nome || '').trim();
-  const comissao_percentual = parseFloat(req.body.comissao_percentual) || barbeiro.comissao_percentual || 0;
-  db.run('UPDATE barbeiros SET nome = ?, comissao_percentual = ? WHERE id = ?', [nome, comissao_percentual, req.params.id]);
-  saveDatabase();
-  res.json({ id: req.params.id, nome, comissao_percentual });
+  const b = active('barbeiros', req.params.id);
+  const nome = name(req.body.nome === undefined ? b.nome : req.body.nome);
+  const supplied = req.body.comissao_percentual === undefined ? b.comissao_percentual : percent(req.body.comissao_percentual);
+  const comissao_percentual = b.is_dono ? 100 : supplied;
+  change('UPDATE barbeiros SET nome=?,comissao_percentual=? WHERE id=?',[nome,comissao_percentual,b.id]);
+  res.json({ id:b.id,nome,comissao_percentual });
 });
-
 app.delete('/api/barbeiros/:id', (req, res) => {
-  db.run('UPDATE barbeiros SET ativo = 0 WHERE id = ? AND is_dono = 0', [req.params.id]);
-  saveDatabase();
-  res.json({ success: true });
+  change('UPDATE barbeiros SET ativo=0 WHERE id=? AND is_dono=0',[id(req.params.id)]);
+  res.json({ success:true });
 });
+registerPhotoRoutes(app, getOne, change, perfilDir);
 
-app.post('/api/barbeiros/:id/foto', (req, res) => {
-  const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ? AND ativo = 1', [req.params.id]);
-  if (!barbeiro) {
-    return res.status(404).json({ error: 'Barbeiro não encontrado' });
-  }
-
-  const { foto } = req.body;
-  if (!foto || typeof foto !== 'string') {
-    return res.status(400).json({ error: 'Imagem não enviada.' });
-  }
-
-  const match = foto.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,(.+)$/);
-  if (!match) {
-    return res.status(400).json({ error: 'Formato de imagem inválido. Use PNG, JPG, WEBP ou GIF.' });
-  }
-
-  const ext = match[1] === 'jpg' ? 'jpg' : match[1];
-  const dados = Buffer.from(match[2], 'base64');
-  if (dados.length > 1024 * 1024) {
-    return res.status(400).json({ error: 'A imagem é muito grande. Máximo 1MB.' });
-  }
-
-  const nomeArquivo = `barbeiro_${barbeiro.id}.${ext}`;
-  const caminho = join(perfilDir, nomeArquivo);
-  writeFileSync(caminho, dados);
-
-  if (barbeiro.foto) {
-    const antiga = join(perfilDir, basename(barbeiro.foto));
-    if (existsSync(antiga) && antiga !== caminho) {
-      try { unlinkSync(antiga); } catch (e) {}
-    }
-  }
-
-  db.run('UPDATE barbeiros SET foto = ? WHERE id = ?', [`assets/perfil/${nomeArquivo}`, barbeiro.id]);
-  saveDatabase();
-  res.json({ foto: `assets/perfil/${nomeArquivo}` });
-});
-
-app.delete('/api/barbeiros/:id/foto', (req, res) => {
-  const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ? AND ativo = 1', [req.params.id]);
-  if (!barbeiro) {
-    return res.status(404).json({ error: 'Barbeiro não encontrado' });
-  }
-
-  if (barbeiro.foto) {
-    const arquivo = join(perfilDir, basename(barbeiro.foto));
-    if (existsSync(arquivo)) {
-      try { unlinkSync(arquivo); } catch (e) {}
-    }
-  }
-
-  db.run('UPDATE barbeiros SET foto = NULL WHERE id = ?', [barbeiro.id]);
-  saveDatabase();
-  res.json({ foto: null });
-});
-
-app.get('/api/servicos', (req, res) => {
-  const servicos = getAll('SELECT * FROM servicos WHERE ativo = 1 ORDER BY nome');
-  res.json(servicos);
-});
-
-function isServicoPigmentacao(nome) {
-  return /^(pigmenta|pintar)/i.test((nome || '').trim());
+function serviceFields(body, previous = {}) {
+  const nome = name(body.nome === undefined ? previous.nome : body.nome);
+  const valor = money(body.valor === undefined ? previous.valor : body.valor);
+  const pigmentacao = isPigmentacao(nome);
+  const raw = body.comissao_fixa_pct === undefined ? previous.comissao_fixa_pct : body.comissao_fixa_pct;
+  return {
+    nome, valor,
+    apenas_dono: pigmentacao ? 0 : flag(body.apenas_dono === undefined ? previous.apenas_dono : body.apenas_dono),
+    comissao_fixa_pct: pigmentacao ? 0 : (raw === undefined || raw === null || raw === '' ? null : percent(raw))
+  };
 }
-
+app.get('/api/servicos', (req, res) => res.json(getAll('SELECT * FROM servicos WHERE ativo=1 ORDER BY nome')));
 app.post('/api/servicos', (req, res) => {
-  const nome = (req.body.nome || '').trim();
-  const valor = parseFloat(req.body.valor) || 0;
-  const apenas_dono = isServicoPigmentacao(nome) ? 0 : (req.body.apenas_dono ? 1 : 0);
-  const comissao_fixa_pct = isServicoPigmentacao(nome)
-    ? 0
-    : ((req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
-      ? null
-      : (parseFloat(req.body.comissao_fixa_pct) || 0));
-  const id = run('INSERT INTO servicos (nome, valor, apenas_dono, comissao_fixa_pct) VALUES (?, ?, ?, ?)', [nome, valor, apenas_dono, comissao_fixa_pct]);
-  res.json({ id, nome, valor, apenas_dono, comissao_fixa_pct });
+  const s = serviceFields(req.body);
+  const value = transaction(() => insert('INSERT INTO servicos (nome,valor,apenas_dono,comissao_fixa_pct) VALUES (?,?,?,?)', [s.nome,s.valor,s.apenas_dono,s.comissao_fixa_pct]));
+  res.json({ id:value,...s });
 });
-
 app.put('/api/servicos/:id', (req, res) => {
-  const servico = getOne('SELECT * FROM servicos WHERE id = ?', [req.params.id]);
-  const nome = (req.body.nome || servico.nome || '').trim();
-  const valor = parseFloat(req.body.valor) || servico.valor || 0;
-  const apenas_dono = isServicoPigmentacao(nome) ? 0 : (req.body.apenas_dono !== undefined ? (req.body.apenas_dono ? 1 : 0) : servico.apenas_dono);
-  const comissao_fixa_pct = isServicoPigmentacao(nome)
-    ? 0
-    : ((req.body.comissao_fixa_pct === '' || req.body.comissao_fixa_pct === null || req.body.comissao_fixa_pct === undefined)
-      ? null
-      : (parseFloat(req.body.comissao_fixa_pct) || 0));
-  db.run('UPDATE servicos SET nome = ?, valor = ?, apenas_dono = ?, comissao_fixa_pct = ? WHERE id = ?', [nome, valor, apenas_dono, comissao_fixa_pct, req.params.id]);
-  saveDatabase();
-  res.json({ id: req.params.id, nome, valor, apenas_dono, comissao_fixa_pct });
+  const old = active('servicos', req.params.id);
+  const s = serviceFields(req.body,old);
+  change('UPDATE servicos SET nome=?,valor=?,apenas_dono=?,comissao_fixa_pct=? WHERE id=?',[s.nome,s.valor,s.apenas_dono,s.comissao_fixa_pct,old.id]);
+  res.json({ id:old.id,...s });
 });
-
 app.delete('/api/servicos/:id', (req, res) => {
-  db.run('UPDATE servicos SET ativo = 0 WHERE id = ? AND apenas_dono = 0', [req.params.id]);
-  saveDatabase();
-  res.json({ success: true });
+  change('UPDATE servicos SET ativo=0 WHERE id=? AND apenas_dono=0',[id(req.params.id)]);
+  res.json({ success:true });
 });
 
 app.post('/api/atendimentos', (req, res) => {
-  const { barbeiro_id, observacao } = req.body;
-
+  const b = active('barbeiros', req.body.barbeiro_id);
   let itens = req.body.itens;
-  if (!Array.isArray(itens) || itens.length === 0) {
-    if (req.body.servico_id) {
-      itens = [{
-        servico_id: req.body.servico_id,
-        valor_cobrado: req.body.valor_cobrado,
-        valor_tinta: req.body.valor_tinta || 0,
-        tem_pigmentacao: req.body.tem_pigmentacao || 0
-      }];
-    } else {
-      return res.status(400).json({ error: 'Informe pelo menos um serviço' });
-    }
+  if (itens !== undefined && !Array.isArray(itens)) invalid('Itens devem ser uma lista.');
+  if (!itens?.length) {
+    if (!req.body.servico_id) invalid('Informe pelo menos um serviço.');
+    // Legacy dye remains global: never copy it into the item as well.
+    itens = [{ servico_id:req.body.servico_id,valor_cobrado:req.body.valor_cobrado }];
   }
-
-  const barbeiro = getOne('SELECT * FROM barbeiros WHERE id = ?', [barbeiro_id]);
-  if (!barbeiro) {
-    return res.status(400).json({ error: 'Barbeiro não encontrado' });
-  }
-
-  const tintaGlobal = parseFloat(req.body.valor_tinta) || 0;
-  const pigGlobal = req.body.tem_pigmentacao ? 1 : 0;
-
-  const itensCompletos = [];
-  let valorCobradoTotal = 0;
-  let valorTintaTotal = 0;
-  let valorComissaoTotal = 0;
-
-  for (let idx = 0; idx < itens.length; idx++) {
-    const item = itens[idx];
-    const servico = getOne('SELECT * FROM servicos WHERE id = ?', [item.servico_id]);
-    if (!servico) {
-      return res.status(400).json({ error: 'Serviço não encontrado' });
-    }
-    if (servico.apenas_dono && !barbeiro.is_dono) {
-      return res.status(400).json({ error: `O serviço "${servico.nome}" só pode ser feito pelo dono` });
-    }
-
-    const valorCobrado = parseFloat(item.valor_cobrado) || 0;
-    let tinta = parseFloat(item.valor_tinta) || 0;
-    let pigmentacao = (item.tem_pigmentacao || tinta > 0) ? 1 : 0;
-    if (idx === 0 && (tintaGlobal > 0 || pigGlobal)) {
-      tinta += tintaGlobal;
-      pigmentacao = 1;
-    }
-
-    let comissaoPercentual;
-    let valorComissao;
-    if (barbeiro.is_dono) {
-      comissaoPercentual = 100;
-      valorComissao = valorCobrado + tinta;
-    } else {
-      const comissaoFixa = (servico.comissao_fixa_pct !== null && servico.comissao_fixa_pct !== undefined)
-        ? servico.comissao_fixa_pct
-        : null;
-      comissaoPercentual = comissaoFixa !== null ? comissaoFixa : barbeiro.comissao_percentual;
-      valorComissao = (valorCobrado * comissaoPercentual) / 100;
-    }
-
-    itensCompletos.push({
-      servico_id: servico.id,
-      valor_cobrado: valorCobrado,
-      valor_tinta: tinta,
-      tem_pigmentacao: pigmentacao,
-      comissao_percentual: comissaoPercentual,
-      valor_comissao: valorComissao
-    });
-
-    valorCobradoTotal += valorCobrado;
-    valorTintaTotal += tinta;
-    valorComissaoTotal += valorComissao;
-  }
-
-  if (itensCompletos.length === 0) {
-    return res.status(400).json({ error: 'Nenhum serviço válido informado' });
-  }
-
-  const totalBase = valorCobradoTotal + valorTintaTotal;
-  const comissaoMediaPct = totalBase > 0 ? (valorComissaoTotal / totalBase) * 100 : 0;
-  const data_hora = new Date().toISOString();
-  const temPigmentacaoGeral = itensCompletos.some(i => i.tem_pigmentacao) ? 1 : 0;
-
-  const id = run(`
-    INSERT INTO atendimentos (barbeiro_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao, data_hora, observacao)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [barbeiro_id, itensCompletos[0].servico_id, valorCobradoTotal, valorTintaTotal, temPigmentacaoGeral, comissaoMediaPct, valorComissaoTotal, data_hora, observacao || '']);
-
-  for (const item of itensCompletos) {
-    run(`
-      INSERT INTO atendimento_itens (atendimento_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [id, item.servico_id, item.valor_cobrado, item.valor_tinta, item.tem_pigmentacao, item.comissao_percentual, item.valor_comissao]);
-  }
-
-  res.json({
-    id,
-    barbeiro_id,
-    servico_id: itensCompletos[0].servico_id,
-    valor_cobrado: valorCobradoTotal,
-    valor_tinta: valorTintaTotal,
-    tem_pigmentacao: temPigmentacaoGeral,
-    comissao_percentual: comissaoMediaPct,
-    valor_comissao: valorComissaoTotal,
-    data_hora,
-    itens: itensCompletos
+  if (itens.length > 100) invalid('Máximo de 100 serviços por atendimento.');
+  const observacao = req.body.observacao ?? '';
+  if (typeof observacao !== 'string' || observacao.length > 2000) invalid('Observação deve ter no máximo 2000 caracteres.');
+  const tintaGlobal = money(req.body.valor_tinta === undefined ? 0 : req.body.valor_tinta,'Tinta');
+  const pigGlobal = flag(req.body.tem_pigmentacao);
+  const seen = new Set();
+  const completos = itens.map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) invalid('Item inválido.');
+    const servicoId = id(item.servico_id);
+    if (seen.has(servicoId)) invalid('O mesmo serviço não pode ser adicionado duas vezes.');
+    seen.add(servicoId);
+    const s = active('servicos',servicoId);
+    if (s.apenas_dono && !b.is_dono) invalid('O serviço "' + s.nome + '" só pode ser feito pelo dono.');
+    const valor_cobrado = money(item.valor_cobrado,'Valor cobrado');
+    const valor_tinta = roundMoney(money(item.valor_tinta === undefined ? 0 : item.valor_tinta,'Tinta') + (index === 0 ? tintaGlobal : 0));
+    const tem_pigmentacao = (flag(item.tem_pigmentacao) || valor_tinta > 0 || (index === 0 && pigGlobal)) ? 1 : 0;
+    const comissao_percentual = b.is_dono ? 100 : percent(s.comissao_fixa_pct ?? b.comissao_percentual);
+    const valor_comissao = b.is_dono ? roundMoney(valor_cobrado + valor_tinta) : roundMoney(valor_cobrado * comissao_percentual / 100);
+    return { servico_id:servicoId,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao };
   });
+  const sum = key => completos.reduce((total,i) => total + Math.round(i[key]*100),0)/100;
+  const valor_cobrado=sum('valor_cobrado'),valor_tinta=sum('valor_tinta'),valor_comissao=sum('valor_comissao');
+  const base=valor_cobrado+valor_tinta;
+  const comissao_percentual=base>0 ? valor_comissao/base*100 : 0;
+  const tem_pigmentacao=completos.some(i=>i.tem_pigmentacao)?1:0;
+  const data_hora=new Date().toISOString();
+  const value=transaction(()=>{
+    const atendimentoId=insert('INSERT INTO atendimentos (barbeiro_id,servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,data_hora,observacao) VALUES (?,?,?,?,?,?,?,?,?)',[b.id,completos[0].servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,data_hora,observacao]);
+    for (const i of completos) insert('INSERT INTO atendimento_itens (atendimento_id,servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao) VALUES (?,?,?,?,?,?,?)',[atendimentoId,i.servico_id,i.valor_cobrado,i.valor_tinta,i.tem_pigmentacao,i.comissao_percentual,i.valor_comissao]);
+    return atendimentoId;
+  });
+  res.json({id:value,barbeiro_id:b.id,servico_id:completos[0].servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,data_hora,itens:completos});
 });
-
 app.get('/api/atendimentos', (req, res) => {
-  const { data_inicio, data_fim } = req.query;
-  
-  let query = `
-    SELECT 
-      a.*,
-      b.nome as barbeiro_nome,
-      s.nome as servico_nome
-    FROM atendimentos a
-    JOIN barbeiros b ON a.barbeiro_id = b.id
-    JOIN servicos s ON a.servico_id = s.id
-    WHERE 1=1
-  `;
-  
-  const params = [];
-  
-  if (data_inicio) {
-    query += ' AND a.data_hora >= ?';
-    params.push(data_inicio);
-  }
-  
-  if (data_fim) {
-    query += ' AND a.data_hora <= ?';
-    params.push(data_fim);
-  }
-  
-  query += ' ORDER BY a.data_hora DESC';
-  
-  const atendimentos = getAll(query, params).map(a => {
-    a.itens = getItensAtendimento(a.id);
-    return a;
-  });
-  res.json(atendimentos);
+  const filtros=period(req.query);
+  if (isOwner(req)) return res.json(listAtendimentos(filtros));
+  const hoje=dayBounds();
+  const rows=listAtendimentos(filtros,' AND a.data_hora >= ? AND a.data_hora < ?',[hoje.inicio,hoje.fim]);
+  // Public cash-register history contains today's receipts, never commission reports.
+  res.json(rows.map(a=>{
+    const {comissao_percentual,valor_comissao,...publico}=a;
+    publico.itens=a.itens.map(({comissao_percentual,valor_comissao,...item})=>item);
+    return publico;
+  }));
+});
+app.delete('/api/atendimentos', requerAcessoRelatorio, (req,res)=>{
+  if (req.body?.confirmacao !== 'APAGAR TODOS') invalid('Confirme a limpeza com APAGAR TODOS.');
+  const backup=basename(backupDatabase());
+  change('DELETE FROM atendimentos');
+  res.json({success:true,backup,message:'Todos os atendimentos foram limpos. A senha foi preservada.'});
+});
+app.delete('/api/atendimentos/:id',(req,res)=>{
+  const value=id(req.params.id);
+  const a=getOne('SELECT * FROM atendimentos WHERE id=?',[value]);
+  if (!a) invalid('Atendimento não encontrado.',404);
+  const hoje=dayBounds();
+  if (!isOwner(req) && !(a.data_hora>=hoje.inicio && a.data_hora<hoje.fim)) invalid('Entre na Área do Dono para excluir atendimentos de dias anteriores.',401);
+  change('DELETE FROM atendimentos WHERE id=?',[value]);
+  res.json({success:true});
 });
 
-app.delete('/api/atendimentos', (req, res) => {
-  db.run('DELETE FROM atendimento_itens');
-  db.run('DELETE FROM atendimentos');
-  try {
-    db.run("DELETE FROM sqlite_sequence WHERE name = 'atendimentos'");
-    db.run("DELETE FROM sqlite_sequence WHERE name = 'atendimento_itens'");
-  } catch (e) {}
-  saveDatabase();
-  res.json({ success: true, message: 'Todos os atendimentos foram limpos' });
-});
-
-app.delete('/api/atendimentos/:id', (req, res) => {
-  db.run('DELETE FROM atendimento_itens WHERE atendimento_id = ?', [req.params.id]);
-  db.run('DELETE FROM atendimentos WHERE id = ?', [req.params.id]);
-  saveDatabase();
-  res.json({ success: true });
-});
-
-function hashSenha(senha, salt) {
-  return createHash('sha256').update(`${salt}::${senha}`).digest('hex');
-}
-
-function gerarSalt() {
-  return randomBytes(16).toString('hex');
-}
-
-function getSenhaDono() {
-  const raw = getConfig('senha_dono');
-  if (!raw) return null;
-  const [salt, hash] = raw.split(':');
-  return { salt, hash };
-}
-
+function hashSenha(senha,salt) { return createHash('sha256').update(salt+'::'+senha).digest('hex'); }
 function senhaValida(senha) {
-  const armazenada = getSenhaDono();
-  if (!armazenada) return true;
-  const hash = hashSenha(senha, armazenada.salt);
-  try {
-    return timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(armazenada.hash, 'hex'));
-  } catch {
-    return false;
-  }
+  if (typeof senha !== 'string') return false;
+  const raw=getConfig('senha_dono');
+  if (!raw) return false;
+  const [salt,hash]=raw.split(':');
+  try { return timingSafeEqual(Buffer.from(hashSenha(senha,salt),'hex'),Buffer.from(hash,'hex')); }
+  catch { return false; }
 }
-
-const tokensRelatorio = new Set();
-
-function criarTokenRelatorio() {
-  const token = randomBytes(32).toString('hex');
-  tokensRelatorio.add(token);
-  return token;
+app.post('/api/relatorio/configurar-senha',(req,res)=>{
+  const {senha}=req.body;
+  if (typeof senha !== 'string' || senha.length<4 || senha.length>256) invalid('A senha deve ter entre 4 e 256 caracteres.');
+  if (getConfig('senha_dono')) invalid('Senha já configurada.');
+  const salt=randomBytes(16).toString('hex');
+  setConfig('senha_dono',salt+':'+hashSenha(senha,salt));
+  res.json({success:true,token:criarTokenRelatorio()});
+});
+app.post('/api/relatorio/login',(req,res)=>{
+  if (!getConfig('senha_dono')) invalid('Senha ainda não configurada.');
+  if (!senhaValida(req.body.senha)) invalid('Senha incorreta.',401);
+  res.json({success:true,token:criarTokenRelatorio()});
+});
+app.post('/api/relatorio/logout',(req,res)=>{
+  tokensRelatorio.delete(token(req));
+  res.json({success:true});
+});
+app.get('/api/relatorio/status',(req,res)=>res.json({senhaConfigurada:!!getConfig('senha_dono')}));
+app.get('/api/relatorio/comissoes',requerAcessoRelatorio,(req,res)=>{
+  const f=period(req.query);let condition='';const params=[];
+  if(f.data_inicio){condition+=' AND a.data_hora>=?';params.push(f.data_inicio);}
+  if(f.data_fim){condition+=' AND a.data_hora<=?';params.push(f.data_fim);}
+  const sql='SELECT b.id,b.nome,b.is_dono,b.ativo,b.foto,COUNT(a.id) AS total_atendimentos,ROUND(COALESCE(SUM(a.valor_cobrado),0),2) AS total_faturado,ROUND(COALESCE(SUM(a.valor_tinta),0),2) AS total_tinta,ROUND(COALESCE(SUM(a.valor_comissao),0),2) AS total_comissao_colaborador,ROUND(COALESCE(SUM(a.valor_cobrado+a.valor_tinta-a.valor_comissao),0),2) AS total_barbearia FROM barbeiros b LEFT JOIN atendimentos a ON b.id=a.barbeiro_id'+condition+' WHERE b.ativo=1 OR a.id IS NOT NULL GROUP BY b.id ORDER BY b.is_dono DESC,b.id';
+  res.json(getAll(sql,params));
+});
+app.get('/api/relatorio/geral',requerAcessoRelatorio,(req,res)=>{
+  const f=period(req.query);let where='';const params=[];
+  if(f.data_inicio){where+=' AND a.data_hora>=?';params.push(f.data_inicio);}
+  if(f.data_fim){where+=' AND a.data_hora<=?';params.push(f.data_fim);}
+  res.json(getOne('SELECT ROUND(COALESCE(SUM(a.valor_cobrado),0),2) AS total_geral,ROUND(COALESCE(SUM(a.valor_tinta),0),2) AS total_tinta,ROUND(COALESCE(SUM(CASE WHEN b.is_dono=0 THEN a.valor_comissao ELSE 0 END),0),2) AS total_colaboradores,ROUND(COALESCE(SUM(CASE WHEN b.is_dono=1 THEN a.valor_comissao ELSE 0 END),0),2) AS total_comissao_dono,ROUND(COALESCE(SUM(a.valor_cobrado+a.valor_tinta-a.valor_comissao),0),2) AS total_barbearia,COUNT(a.id) AS total_atendimentos FROM atendimentos a JOIN barbeiros b ON b.id=a.barbeiro_id WHERE 1=1'+where,params));
+});
+app.get('/api/relatorio/atendimentos',requerAcessoRelatorio,(req,res)=>res.json(listAtendimentos(period(req.query))));
+app.post('/api/backup',requerAcessoRelatorio,(req,res)=>res.json({success:true,arquivo:basename(backupDatabase())}));
+app.get('/api/backup',requerAcessoRelatorio,(req,res)=>{
+  const {arquivo}=req.query;
+  if (arquivo !== undefined) {
+    if (typeof arquivo !== 'string' || !/^barbearia-[\w.-]+\.db$/.test(arquivo) || basename(arquivo)!==arquivo) invalid('Backup não encontrado.',404);
+    const path=join(backupsDir,arquivo);
+    if (!existsSync(path)) invalid('Backup não encontrado.',404);
+    return res.download(path);
+  }
+  res.json(existsSync(backupsDir)?readdirSync(backupsDir).filter(f=>/^barbearia-[\w.-]+\.db$/.test(f)).sort().reverse():[]);
+});
+app.use((error,req,res,next)=>{
+  if (res.headersSent) return next(error);
+  const status=error.status || 500;
+  if(status>=500)console.error(error);
+  res.status(status).json({error:status>=500?'Não foi possível salvar a operação. Confira o disco e tente novamente.':error.message});
+});
+const server=app.listen(PORT,'127.0.0.1',()=>{
+  console.log('Servidor rodando em http://localhost:'+PORT);
+  if(process.send)process.send('ready');
+});
+function shutdown() {
+  try { closeDatabase(); }
+  catch(error){console.error('Falha ao encerrar:',error.message);process.exitCode=1;}
+  server.close(()=>process.exit(process.exitCode || 0));
 }
-
-function validarTokenRelatorio(token) {
-  return token && tokensRelatorio.has(token);
-}
-
-function requerAcessoRelatorio(req, res, next) {
-  const token = req.headers['x-relatorio-token'] || req.query.token;
-  if (validarTokenRelatorio(token)) return next();
-  return res.status(401).json({ error: 'Acesso negado. Informe a senha do dono.' });
-}
-
-app.post('/api/relatorio/configurar-senha', (req, res) => {
-  const { senha } = req.body;
-  if (!senha || String(senha).length < 4) {
-    return res.status(400).json({ error: 'A senha deve ter pelo menos 4 caracteres' });
-  }
-  if (getConfig('senha_dono')) {
-    return res.status(400).json({ error: 'Senha já configurada' });
-  }
-  const salt = gerarSalt();
-  setConfig('senha_dono', `${salt}:${hashSenha(senha, salt)}`);
-  res.json({ success: true, token: criarTokenRelatorio() });
-});
-
-app.post('/api/relatorio/login', (req, res) => {
-  const { senha } = req.body;
-  if (!getConfig('senha_dono')) {
-    return res.status(400).json({ error: 'Senha ainda não configurada' });
-  }
-  if (senhaValida(senha)) {
-    res.json({ success: true, token: criarTokenRelatorio() });
-  } else {
-    res.status(401).json({ error: 'Senha incorreta' });
-  }
-});
-
-app.get('/api/relatorio/status', (req, res) => {
-  res.json({ senhaConfigurada: !!getConfig('senha_dono') });
-});
-
-app.get('/api/relatorio/comissoes', requerAcessoRelatorio, (req, res) => {
-  const { data_inicio, data_fim, periodo } = req.query;
-  
-  let joinConditions = '';
-  const params = [];
-  
-  if (data_inicio) {
-    joinConditions += ' AND a.data_hora >= ?';
-    params.push(data_inicio);
-  }
-  
-  if (data_fim) {
-    joinConditions += ' AND a.data_hora <= ?';
-    params.push(data_fim);
-  }
-  
-  const query = `
-    SELECT 
-      b.id,
-      b.nome,
-      b.is_dono,
-      b.foto,
-      COUNT(a.id) as total_atendimentos,
-      COALESCE(SUM(a.valor_cobrado), 0) as total_faturado,
-      COALESCE(SUM(a.valor_tinta), 0) as total_tinta,
-      COALESCE(SUM(a.valor_comissao), 0) as total_comissao_colaborador,
-      COALESCE(SUM((a.valor_cobrado + a.valor_tinta) - a.valor_comissao), 0) as total_barbearia
-    FROM barbeiros b
-    LEFT JOIN atendimentos a ON b.id = a.barbeiro_id ${joinConditions}
-    WHERE b.ativo = 1
-    GROUP BY b.id, b.nome, b.is_dono, b.foto
-    ORDER BY b.is_dono DESC, b.id
-  `;
-  
-  const relatorio = getAll(query, params);
-  res.json(relatorio);
-});
-
-app.get('/api/relatorio/geral', requerAcessoRelatorio, (req, res) => {
-  const { data_inicio, data_fim } = req.query;
-  
-  let query = `
-    SELECT 
-      COALESCE(SUM(valor_cobrado), 0) as total_geral,
-      COALESCE(SUM(valor_tinta), 0) as total_tinta,
-      COALESCE(SUM(valor_comissao), 0) as total_colaboradores,
-      COALESCE(SUM((valor_cobrado + valor_tinta) - valor_comissao), 0) as total_barbearia,
-      COUNT(id) as total_atendimentos
-    FROM atendimentos
-    WHERE 1=1
-  `;
-  
-  const params = [];
-  
-  if (data_inicio) {
-    query += ' AND data_hora >= ?';
-    params.push(data_inicio);
-  }
-  
-  if (data_fim) {
-    query += ' AND data_hora <= ?';
-    params.push(data_fim);
-  }
-  
-  const resultado = getOne(query, params);
-  res.json(resultado || {
-    total_geral: 0,
-    total_tinta: 0,
-    total_colaboradores: 0,
-    total_barbearia: 0,
-    total_atendimentos: 0
-  });
-});
-
-app.get('/api/relatorio/atendimentos', requerAcessoRelatorio, (req, res) => {
-  const { data_inicio, data_fim } = req.query;
-
-  let query = `
-    SELECT 
-      a.*,
-      b.nome as barbeiro_nome,
-      b.is_dono as barbeiro_is_dono,
-      s.nome as servico_nome
-    FROM atendimentos a
-    JOIN barbeiros b ON a.barbeiro_id = b.id
-    JOIN servicos s ON a.servico_id = s.id
-    WHERE 1=1
-  `;
-  const params = [];
-
-  if (data_inicio) {
-    query += ' AND a.data_hora >= ?';
-    params.push(data_inicio);
-  }
-
-  if (data_fim) {
-    query += ' AND a.data_hora <= ?';
-    params.push(data_fim);
-  }
-
-  query += ' ORDER BY a.data_hora DESC';
-
-  const atendimentos = getAll(query, params).map(a => {
-    a.itens = getItensAtendimento(a.id);
-    return a;
-  });
-  res.json(atendimentos);
-});
-
-app.post('/api/backup', (req, res) => {
-  const backupPath = backupDatabase();
-  res.json({ success: true, arquivo: basename(backupPath) });
-});
-
-app.get('/api/backup', (req, res) => {
-  const { arquivo } = req.query;
-  if (arquivo) {
-    const backupPath = join(backupsDir, arquivo);
-    if (!backupPath.startsWith(backupsDir) || !existsSync(backupPath)) {
-      return res.status(404).json({ error: 'Backup não encontrado' });
-    }
-    return res.download(backupPath);
-  }
-  if (!existsSync(backupsDir)) {
-    return res.json([]);
-  }
-  const backups = readdirSync(backupsDir)
-    .filter(f => f.startsWith('barbearia-') && f.endsWith('.db'))
-    .sort()
-    .reverse();
-  res.json(backups);
-});
-
-app.listen(PORT, '127.0.0.1', () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
-
+process.on('SIGINT',shutdown);
+process.on('SIGTERM',shutdown);
+process.on('message',message=>{if(message==='shutdown')shutdown();});
+process.on('disconnect',shutdown);
+server.on('error',error=>{console.error('Não foi possível iniciar:',error.message);closeDatabase();process.exit(1);});

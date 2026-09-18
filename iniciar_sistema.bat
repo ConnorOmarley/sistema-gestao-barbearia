@@ -27,24 +27,12 @@ pause
 exit /b 1
 
 :tem_node
-if not exist "%~dp0backend\node_modules" (
-    echo Instalando dependencias ^(primeira vez^)...
-    call "%~dp0Instalar.bat"
+if not exist "%~dp0backend\node_modules\sql.js\dist\sql-wasm.wasm" (
+    echo [ERRO] Dependencias ausentes. Prepare a pasta completa com Instalar.bat antes de usar offline.
+    pause
+    exit /b 1
 )
-
 cd /d "%~dp0backend"
-echo Iniciando o servidor local...
-echo.
-start "" /b "%NODE_BIN%" server.js
-
-timeout /t 2 /nobreak >nul
-
-echo Abrindo o sistema no navegador...
-start "" http://localhost:3000
-
-echo.
-echo ========================================================
-echo   SISTEMA EM FUNCIONAMENTO (100%% OFFLINE / PORTATIL)
-echo   Pressione qualquer tecla ou feche esta janela para encerrar.
-echo ========================================================
-pause >nul
+"%NODE_BIN%" launcher.js
+if errorlevel 1 pause
+endlocal

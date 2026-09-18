@@ -102,10 +102,12 @@ sistema-gestao-barbearia/
 ## 🧮 Lógica de comissão
 
 ```
-valor_comissao = (valor_cobrado * comissao_percentual) / 100
+colaborador: valor_comissao = arredondar_centavos(valor_cobrado * percentual / 100)
+dono: valor_comissao = valor_cobrado + valor_tinta
 
 Regras:
-- Cada barbeiro tem seu percentual (ex: dono 50%)
+- Dono: 100% do valor cobrado + tinta
+- Colaborador: percentual do serviço (quando definido) ou do cadastro, somente sobre o valor cobrado
 - Pigmentação: o lucro da tinta vai inteiro para o dono
 - Serviços podem ser marcados como exclusivos do dono
 ```
@@ -115,3 +117,6 @@ Regras:
 ## 📝 Licença
 
 MIT
+## Atualização de regras e segurança
+
+Consulte [CORRECOES.md](CORRECOES.md) para alterações, testes e procedimento de atualização. O histórico público é limitado ao dia; relatórios e backups exigem acesso do dono. Pressione ENTER na janela do iniciador para salvar e encerrar antes de remover o pen drive.

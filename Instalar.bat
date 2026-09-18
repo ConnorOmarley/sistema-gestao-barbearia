@@ -1,4 +1,5 @@
 @echo off
+setlocal
 title Instalacao do Sistema de Gestao da Barbearia
 cd /d "%~dp0"
 
@@ -33,19 +34,21 @@ if errorlevel 1 (
 )
 
 :verificar_dependencias
+set "PATH=%~dp0bin;%PATH%"
 echo.
 echo Verificando dependencias do sistema...
 if not exist "%~dp0backend\node_modules" (
     echo Instalando as dependencias do sistema ^(primeira vez^)...
     pushd "%~dp0backend"
     call npm install
-    popd
     if errorlevel 1 (
+        popd
         echo.
         echo [ERRO] Falha ao instalar dependencias.
         pause
         exit /b 1
     )
+    popd
 ) else (
     echo Dependencias ja instaladas.
 )
@@ -53,7 +56,7 @@ if not exist "%~dp0backend\node_modules" (
 echo.
 echo ============================================
 echo   INSTALACAO CONCLUIDA!
-echo   Agora use o arquivo "Iniciar Sistema.bat"
+echo   Agora use o arquivo "iniciar_sistema.bat"
 echo   para abrir o sistema.
 echo ============================================
 echo.

@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "node ../tests/regression.mjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",

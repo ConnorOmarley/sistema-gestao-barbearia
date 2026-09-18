@@ -1,153 +1,122 @@
 import initSqlJs from 'sql.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, unlinkSync, mkdirSync, renameSync, openSync, closeSync, fsyncSync } from 'fs';
+import { randomBytes } from 'crypto';
+import { isPigmentacao } from './rules.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const dbPath = join(__dirname, 'barbearia.db');
 const backupsDir = join(__dirname, 'backups');
 const MAX_BACKUPS = 20;
-
 const SQL = await initSqlJs();
-let db;
+const original = existsSync(dbPath) ? readFileSync(dbPath) : null;
+let db = original ? new SQL.Database(new Uint8Array(original)) : new SQL.Database();
+let inTransaction = false;
+let ready = false;
 
-if (existsSync(dbPath)) {
-  const buffer = readFileSync(dbPath);
-  db = new SQL.Database(buffer);
-} else {
-  db = new SQL.Database();
+function atomicWrite(path, data) {
+  const temp = path + '.tmp-' + process.pid + '-' + randomBytes(4).toString('hex');
+  try {
+    writeFileSync(temp, data, { flag: 'wx' });
+    const fd = openSync(temp, 'r+');
+    try { fsyncSync(fd); } finally { closeSync(fd); }
+    renameSync(temp, path);
+  } finally { if (existsSync(temp)) unlinkSync(temp); }
 }
-
-db.run(`
-  CREATE TABLE IF NOT EXISTS barbeiros (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    comissao_percentual REAL NOT NULL,
-    is_dono INTEGER DEFAULT 0,
-    ativo INTEGER DEFAULT 1
-  );
-
-  CREATE TABLE IF NOT EXISTS servicos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL,
-    valor REAL NOT NULL,
-    apenas_dono INTEGER DEFAULT 0,
-    comissao_fixa_pct REAL DEFAULT NULL,
-    ativo INTEGER DEFAULT 1
-  );
-
-CREATE TABLE IF NOT EXISTS atendimentos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    barbeiro_id INTEGER NOT NULL,
-    servico_id INTEGER NOT NULL,
-    valor_cobrado REAL NOT NULL,
-    valor_tinta REAL DEFAULT 0,
-    tem_pigmentacao INTEGER DEFAULT 0,
-    comissao_percentual REAL NOT NULL,
-    valor_comissao REAL NOT NULL,
-    data_hora TEXT NOT NULL,
-    observacao TEXT,
-    FOREIGN KEY (barbeiro_id) REFERENCES barbeiros(id),
-    FOREIGN KEY (servico_id) REFERENCES servicos(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS atendimento_itens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    atendimento_id INTEGER NOT NULL,
-    servico_id INTEGER NOT NULL,
-    valor_cobrado REAL NOT NULL,
-    valor_tinta REAL DEFAULT 0,
-    tem_pigmentacao INTEGER DEFAULT 0,
-    comissao_percentual REAL NOT NULL,
-    valor_comissao REAL NOT NULL,
-    FOREIGN KEY (atendimento_id) REFERENCES atendimentos(id),
-    FOREIGN KEY (servico_id) REFERENCES servicos(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS config (
-    chave TEXT PRIMARY KEY,
-    valor TEXT
-  );
-
-  CREATE INDEX IF NOT EXISTS idx_atendimentos_data ON atendimentos(data_hora);
-  CREATE INDEX IF NOT EXISTS idx_atendimentos_barbeiro ON atendimentos(barbeiro_id);
-  CREATE INDEX IF NOT EXISTS idx_itens_atendimento ON atendimento_itens(atendimento_id);
-`);
-
-// Migração: transforma atendimentos antigos (serviço único) em itens.
-const temItens = db.exec('SELECT 1 FROM atendimento_itens');
-if (temItens.length === 0) {
-  const antigos = db.exec('SELECT id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao FROM atendimentos');
-  if (antigos.length > 0 && antigos[0].values.length > 0) {
-    for (const row of antigos[0].values) {
-      db.run('INSERT INTO atendimento_itens (atendimento_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao) VALUES (?, ?, ?, ?, ?, ?, ?)', row);
-    }
-    saveDatabase();
-  }
+// sql.js reopens its connection during export.
+function snapshot() {
+  try { return db.export(); }
+  finally { db.run('PRAGMA foreign_keys = ON'); }
 }
-
-try { db.run('ALTER TABLE barbeiros ADD COLUMN foto TEXT'); } catch (e) {}
-
-try { db.run('ALTER TABLE servicos ADD COLUMN comissao_fixa_pct REAL'); } catch (e) {}
-db.run("UPDATE servicos SET comissao_fixa_pct = 0, apenas_dono = 0 WHERE comissao_fixa_pct IS NULL AND (nome LIKE 'Pigmenta%' OR nome LIKE 'Pintar%')");
-
-const donoExists = db.exec('SELECT 1 FROM barbeiros WHERE is_dono = 1');
-if (donoExists.length === 0) {
-  db.run(`INSERT INTO barbeiros (nome, comissao_percentual, is_dono, ativo) VALUES ('Michael Barber', 100, 1, 1)`);
-}
-
-const servicoExists = db.exec('SELECT 1 FROM servicos');
-if (servicoExists.length === 0) {
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Corte Simples', 30.00, 0, 1, NULL)`);
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Barba', 20.00, 0, 1, NULL)`);
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Corte + Barba', 45.00, 0, 1, NULL)`);
-  db.run(`INSERT INTO servicos (nome, valor, apenas_dono, ativo, comissao_fixa_pct) VALUES ('Pigmentação', 80.00, 0, 1, 0)`);
-}
-
 function saveDatabase() {
-  const data = db.export();
-  writeFileSync(dbPath, data);
+  if (!inTransaction) atomicWrite(dbPath, snapshot());
 }
-
+function transaction(action) {
+  if (inTransaction) return action();
+  const before = snapshot();
+  inTransaction = true;
+  try {
+    db.run('BEGIN IMMEDIATE');
+    const result = action();
+    db.run('COMMIT');
+    inTransaction = false;
+    saveDatabase();
+    return result;
+  } catch (error) {
+    try { db.run('ROLLBACK'); } catch {}
+    db.close();
+    db = new SQL.Database(before);
+    db.run('PRAGMA foreign_keys = ON');
+    throw error;
+  } finally { inTransaction = false; }
+}
+function getConfig(chave) {
+  return db.exec('SELECT valor FROM config WHERE chave = ?', [chave])[0]?.values[0]?.[0] ?? null;
+}
+function setConfig(chave, valor) {
+  transaction(() => db.run('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)', [chave, valor]));
+}
 function backupDatabase() {
   saveDatabase();
-  if (!existsSync(backupsDir)) {
-    mkdirSync(backupsDir, { recursive: true });
-  }
-  const date = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const stamp = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
-  const backupPath = join(backupsDir, `barbearia-${stamp}.db`);
-  writeFileSync(backupPath, db.export());
-  const backups = readdirSync(backupsDir)
-    .filter(f => f.startsWith('barbearia-') && f.endsWith('.db'))
-    .sort();
-  while (backups.length > MAX_BACKUPS) {
-    unlinkSync(join(backupsDir, backups.shift()));
-  }
+  mkdirSync(backupsDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = join(backupsDir, 'barbearia-' + stamp + '-' + randomBytes(4).toString('hex') + '.db');
+  atomicWrite(backupPath, snapshot());
+  const backups = readdirSync(backupsDir).filter(f => /^barbearia-[\w.-]+\.db$/.test(f)).sort();
+  while (backups.length > MAX_BACKUPS) unlinkSync(join(backupsDir, backups.shift()));
   return backupPath;
 }
 
-setInterval(saveDatabase, 5000);
-setInterval(backupDatabase, 5 * 60 * 1000);
-
-function getConfig(chave) {
-  const result = db.exec('SELECT valor FROM config WHERE chave = ?', [chave]);
-  if (result.length === 0 || result[0].values.length === 0) return null;
-  return result[0].values[0][0];
+db.run(readFileSync(join(__dirname, 'schema.sql'), 'utf8'));
+const addColumn = (table, column, definition) => {
+  if (!db.exec('PRAGMA table_info(' + table + ')')[0].values.some(row => row[1] === column)) db.run('ALTER TABLE ' + table + ' ADD COLUMN ' + column + ' ' + definition);
+};
+addColumn('barbeiros', 'foto', 'TEXT');
+addColumn('servicos', 'comissao_fixa_pct', 'REAL');
+if (getConfig('schema_version') !== '2') {
+  // Preserve the exact pre-migration bytes, outside the rotating backups.
+  if (original) atomicWrite(join(__dirname, 'barbearia-antes-migracao-v2-' + Date.now() + '.db'), original);
+  db.run('PRAGMA foreign_keys = OFF');
+  db.run('BEGIN');
+  try {
+    db.run('ALTER TABLE atendimento_itens RENAME TO atendimento_itens_v1');
+    db.run(readFileSync(join(__dirname, 'schema.sql'), 'utf8'));
+    db.run('INSERT INTO atendimento_itens SELECT * FROM atendimento_itens_v1');
+    db.run('DROP TABLE atendimento_itens_v1');
+    db.run('CREATE INDEX IF NOT EXISTS idx_itens_atendimento ON atendimento_itens(atendimento_id)');
+    db.run('INSERT INTO atendimento_itens (atendimento_id, servico_id, valor_cobrado, valor_tinta, tem_pigmentacao, comissao_percentual, valor_comissao) SELECT a.id, a.servico_id, a.valor_cobrado, a.valor_tinta, a.tem_pigmentacao, a.comissao_percentual, a.valor_comissao FROM atendimentos a WHERE NOT EXISTS (SELECT 1 FROM atendimento_itens i WHERE i.atendimento_id = a.id)');
+    for (const [id, nome] of db.exec('SELECT id, nome FROM servicos')[0]?.values || []) {
+      if (isPigmentacao(nome)) db.run('UPDATE servicos SET comissao_fixa_pct = 0, apenas_dono = 0 WHERE id = ?', [id]);
+    }
+    db.run("INSERT OR REPLACE INTO config VALUES ('schema_version', '2')");
+    db.run('COMMIT');
+  } catch (error) { db.run('ROLLBACK'); throw error; }
 }
-
-function setConfig(chave, valor) {
-  db.run('INSERT OR REPLACE INTO config (chave, valor) VALUES (?, ?)', [chave, valor]);
-  saveDatabase();
-}
-
-process.on('exit', saveDatabase);
-process.on('SIGINT', () => {
-  saveDatabase();
-  process.exit();
+db.run('PRAGMA foreign_keys = ON');
+// Preserve legacy duplicates; reject any new duplicate.
+db.run("CREATE TRIGGER IF NOT EXISTS itens_sem_repeticao_insert BEFORE INSERT ON atendimento_itens WHEN EXISTS (SELECT 1 FROM atendimento_itens WHERE atendimento_id=NEW.atendimento_id AND servico_id=NEW.servico_id) BEGIN SELECT RAISE(ABORT, 'Servico repetido no atendimento'); END");
+db.run("CREATE TRIGGER IF NOT EXISTS itens_sem_repeticao_update BEFORE UPDATE OF atendimento_id, servico_id ON atendimento_itens WHEN (OLD.atendimento_id != NEW.atendimento_id OR OLD.servico_id != NEW.servico_id) AND EXISTS (SELECT 1 FROM atendimento_itens WHERE atendimento_id=NEW.atendimento_id AND servico_id=NEW.servico_id AND id != NEW.id) BEGIN SELECT RAISE(ABORT, 'Servico repetido no atendimento'); END");
+if (!db.exec('SELECT 1 FROM atendimento_itens GROUP BY atendimento_id, servico_id HAVING COUNT(*) > 1').length) db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_item_servico_unico ON atendimento_itens(atendimento_id, servico_id)');
+if (db.exec('PRAGMA foreign_key_check').length) console.warn('Referências antigas inconsistentes: dados preservados. Revise o backup anterior à migração.');
+transaction(() => {
+  if (!db.exec('SELECT 1 FROM barbeiros WHERE is_dono = 1').length) db.run("INSERT INTO barbeiros (nome,comissao_percentual,is_dono,ativo) VALUES ('Michael Barber',100,1,1)");
+  if (!db.exec('SELECT 1 FROM servicos').length) {
+    for (const [nome,valor,pct] of [['Corte Simples',30,null],['Barba',20,null],['Corte + Barba',45,null],['Pigmentação',80,0]]) db.run('INSERT INTO servicos (nome,valor,comissao_fixa_pct) VALUES (?,?,?)',[nome,valor,pct]);
+  }
 });
-
-export default db;
-export { saveDatabase, backupDatabase, backupsDir, getConfig, setConfig };
+ready = true;
+function safeSave() {
+  try { if (ready) saveDatabase(); } catch (error) { console.error('Falha ao salvar banco:', error.message); }
+}
+const saveTimer = setInterval(safeSave, 5000);
+const backupTimer = setInterval(() => {
+  try { backupDatabase(); } catch (error) { console.error('Falha ao criar backup:', error.message); }
+}, 5 * 60 * 1000);
+function closeDatabase() {
+  saveDatabase();
+  clearInterval(saveTimer);
+  clearInterval(backupTimer);
+}
+process.on('exit', safeSave);
+export { db as default, saveDatabase, backupDatabase, backupsDir, getConfig, setConfig, transaction, closeDatabase };

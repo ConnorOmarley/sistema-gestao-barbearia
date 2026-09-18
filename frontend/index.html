@@ -1512,7 +1512,7 @@
                 <div class="section-header">
                     <div>
                         <h2><i class="fas fa-chart-pie"></i> Relatórios & Performance Financeira</h2>
-                        <p class="section-subtitle">Acompanhe o faturamento geral, comissões pagas e lucratividade por período</p>
+                        <p class="section-subtitle">Acompanhe receitas com tinta, comissões e a parte da barbearia por período</p>
                     </div>
                 </div>
 
@@ -1561,7 +1561,8 @@
                                     <tr>
                                         <th>Colaborador</th>
                                         <th>Atendimentos</th>
-                                        <th>Faturamento</th>
+                                        <th>Total com tinta</th>
+                                        <th>Tinta incluída</th>
                                         <th>Comissão Paga</th>
                                         <th>Parte Barbearia</th>
                                         <th>Participação</th>
@@ -1599,10 +1600,9 @@
                                 <th>Data & Hora</th>
                                 <th>Profissional</th>
                                 <th>Serviço</th>
-                                <th>Valor Cobrado</th>
-                                <th>Comissão %</th>
-                                <th>Valor Comissão</th>
+                                <th>Total com tinta</th>
                                 <th>Observação</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1632,10 +1632,11 @@
                                 <th>Data & Hora</th>
                                 <th>Profissional</th>
                                 <th>Serviço</th>
-                                <th>Valor Cobrado</th>
-                                <th>Comissão %</th>
+                                <th>Total com tinta</th>
+                                <th>Comissão efetiva %</th>
                                 <th>Valor Comissão</th>
                                 <th>Observação</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -1929,9 +1930,10 @@
     <!-- Upload de Foto de Perfil -->
     <input type="file" id="input-foto-perfil" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;">
 
+    <script src="ui-helpers.js"></script>
     <!-- Scripts da Aplicação -->
     <script>
-        const API_URL = 'http://localhost:3000/api';
+        const API_URL = window.location.origin + '/api';
         let cachedBarbeiros = [];
         let cachedServicos = [];
 
@@ -1939,7 +1941,7 @@
         function avatarBarbeiro(b, idx, estiloExtra = '', clicavel = false) {
             let conteudo;
             if (b.foto) {
-                conteudo = `<img src="${b.foto}" alt="${b.nome}">`;
+                conteudo = `<img src="${escapeHtml(safePhoto(b.foto))}" alt="${escapeHtml(b.nome)}">`;
             } else if (b.is_dono == 1) {
                 conteudo = `<img src="assets/logo.png" alt="Dono" style="border-radius: 8px;">`;
             } else {
@@ -2169,7 +2171,7 @@
             
             toast.innerHTML = `
                 <i class="fas ${icon} toast-icon"></i>
-                <div style="flex: 1;">${message}</div>
+                <div style="flex: 1;">${escapeHtml(message)}</div>
             `;
             
             container.appendChild(toast);
@@ -2250,8 +2252,9 @@
             }
         }
 
-        function toggleAcessoDono() {
+        async function toggleAcessoDono() {
             if (relatorioToken()) {
+                if (!await salvarAlteracao(API_URL + '/relatorio/logout', { method: 'POST', headers: { 'X-Relatorio-Token': relatorioToken() } })) return;
                 removerTokenRelatorio();
                 atualizarUIacessoDono();
                 if (document.getElementById('relatorio').classList.contains('active') ||
@@ -2271,6 +2274,9 @@
 
         function removerTokenRelatorio() {
             sessionStorage.removeItem('relatorioToken');
+            for (const selector of ['#stats-geral', '#stats-colaboradores', '#table-relatorio-detalhado tbody', '#table-historico-dono tbody']) document.querySelector(selector).replaceChildren();
+            const canvas = document.getElementById('chart-participacao');
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
             atualizarUIacessoDono();
         }
 
@@ -2357,7 +2363,7 @@
             const inputTinta = document.getElementById('atend-valor-tinta');
 
             const barbeiro = cachedBarbeiros.find(b => b.id == selectBarb.value);
-            const valorTinta = checkTinta.checked ? parseFloat(inputTinta.value || 0) : 0;
+            const valorTinta = parseFloat(inputTinta.value || 0);
 
             document.getElementById('preview-barbeiro').textContent = barbeiro ? barbeiro.nome : '--';
 
@@ -2371,7 +2377,7 @@
                         ? servico.comissao_fixa_pct
                         : null;
                     const pct = dono ? 100 : (comissaoFixa !== null ? comissaoFixa : barbeiro.comissao_percentual);
-                    comissaoBarbeiro += dono ? item.valor : (item.valor * pct) / 100;
+                    comissaoBarbeiro = roundMoney(comissaoBarbeiro + (dono ? item.valor : roundMoney(item.valor * pct / 100)));
                     valorServicos += item.valor;
                     return item.nome;
                 });
@@ -2449,7 +2455,7 @@
                 <div class="atendimento-item-row">
                     <div class="input-icon-wrapper" style="flex: 1;">
                         <i class="fas fa-cut"></i>
-                        <input type="text" class="item-nome-exibido" value="${item.nome}" readonly>
+                        <input type="text" class="item-nome-exibido" value="${escapeHtml(item.nome)}" readonly>
                     </div>
                     <div class="input-icon-wrapper" style="flex: 0 0 150px;">
                         <i class="fas fa-dollar-sign"></i>
@@ -2485,7 +2491,7 @@
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 ${avatarBarbeiro(b, idx, 'width: 52px; height: 52px; font-size: 1rem; border-radius: 8px;', true)}
-                                <strong>${b.nome}</strong>
+                                <strong>${escapeHtml(b.nome)}</strong>
                             </div>
                         </td>
                         <td><span class="badge badge-gold">${b.comissao_percentual}%</span></td>
@@ -2496,7 +2502,7 @@
                         </td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-outline btn-small" onclick="editBarbeiro(${b.id}, '${b.nome}', ${b.comissao_percentual})">
+                                <button class="btn btn-outline btn-small" onclick="editBarbeiroPorId(${b.id})">
                                     <i class="fas fa-edit"></i> Editar
                                 </button>
                                 ${b.foto ? `
@@ -2534,13 +2540,13 @@
                     const comissaoJS = (s.comissao_fixa_pct === null || s.comissao_fixa_pct === undefined) ? 'null' : s.comissao_fixa_pct;
                     return `
                     <tr>
-                        <td><strong>${s.nome}</strong></td>
+                        <td><strong>${escapeHtml(s.nome)}</strong></td>
                         <td style="font-weight: 700; color: var(--gold-light);">R$ ${s.valor.toFixed(2)}</td>
                         <td>${restrictionBadge}</td>
                         <td>${comissaoBadge}</td>
                         <td>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-outline btn-small" onclick="editServico(${s.id}, '${s.nome}', ${s.valor}, ${s.apenas_dono}, ${comissaoJS})">
+                                <button class="btn btn-outline btn-small" onclick="editServicoPorId(${s.id})">
                                     <i class="fas fa-edit"></i> Editar
                                 </button>
                                 <button class="btn btn-danger btn-small" onclick="deleteServico(${s.id})">
@@ -2563,7 +2569,7 @@
                 cachedBarbeiros = await res.json();
                 const select = document.getElementById('atend-barbeiro');
                 select.innerHTML = '<option value="">Selecione o profissional...</option>' + 
-                    cachedBarbeiros.map((b, idx) => `<option value="${b.id}" data-is-dono="${b.is_dono}">${idx + 1}. ${b.nome} (${b.comissao_percentual}%)</option>`).join('');
+                    cachedBarbeiros.map((b, idx) => `<option value="${b.id}" data-is-dono="${b.is_dono}">${idx + 1}. ${escapeHtml(b.nome)} (${b.comissao_percentual}%)</option>`).join('');
                 
                 select.onchange = () => {
                     const divValorTinta = document.getElementById('div-valor-tinta');
@@ -2580,10 +2586,14 @@
         document.getElementById('atend-pigmentacao').addEventListener('change', (e) => {
             const divValorTinta = document.getElementById('div-valor-tinta');
             divValorTinta.style.display = e.target.checked ? 'block' : 'none';
+            if (!e.target.checked) document.getElementById('atend-valor-tinta').value = '';
             updateLivePreview();
         });
 
-        document.getElementById('atend-valor-tinta').addEventListener('input', updateLivePreview);
+        document.getElementById('atend-valor-tinta').addEventListener('input', () => {
+            if (Number(document.getElementById('atend-valor-tinta').value) > 0) document.getElementById('atend-pigmentacao').checked = true;
+            updateLivePreview();
+        });
 
         async function loadServicosSelect() {
             try {
@@ -2591,7 +2601,7 @@
                 cachedServicos = await res.json();
                 const select = document.getElementById('atend-servico');
                 select.innerHTML = '<option value="">Selecione um serviço...</option>' + 
-                    cachedServicos.map(s => `<option value="${s.id}">${s.nome} - R$ ${s.valor.toFixed(2)}</option>`).join('');
+                    cachedServicos.map(s => `<option value="${s.id}">${escapeHtml(s.nome)} - R$ ${s.valor.toFixed(2)}</option>`).join('');
                 select.onchange = updateLivePreview;
             } catch (err) {
                 console.error(err);
@@ -2659,14 +2669,20 @@
         }
 
         async function loadHistoricoDono() {
+            const tokenSolicitado = relatorioToken();
+            if (!tokenSolicitado) return;
             if (!histDonoPeriodo) {
                 selectPeriodoHistoricoDono('hoje');
                 return;
             }
             try {
                 const url = `${API_URL}/relatorio/atendimentos?data_inicio=${histDonoInicio}&data_fim=${histDonoFim}`;
-                const res = await fetch(url, { headers: { 'X-Relatorio-Token': relatorioToken() } });
+                const res = await fetch(url, { headers: { 'X-Relatorio-Token': tokenSolicitado } });
+                if (tokenSolicitado !== relatorioToken()) return;
+                if (res.status === 401) { removerTokenRelatorio(); abrirModalSenhaRelatorio(); return; }
+                if (!res.ok) throw new Error('Falha ao carregar histórico.');
                 const atendimentos = await res.json();
+                if (tokenSolicitado !== relatorioToken()) return;
                 renderLinhasHistorico(atendimentos, document.querySelector('#table-historico-dono tbody'), 'Nenhum atendimento registrado no período.');
             } catch (err) {
                 console.error('Erro ao carregar histórico do dono:', err);
@@ -2674,20 +2690,21 @@
         }
 
         function renderLinhasHistorico(atendimentos, tbody, msgVazia) {
+            const owner = tbody.closest('table').id === 'table-historico-dono';
             if (atendimentos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 30px; color: var(--text-muted);">${msgVazia}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${owner ? 8 : 6}" style="text-align:center; padding: 30px; color: var(--text-muted);">${msgVazia}</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = atendimentos.map(a => {
+            tbody.innerHTML = atendimentos.map((a, index) => {
                 const itens = (a.itens && a.itens.length)
                     ? a.itens
                     : [{ servico_nome: a.servico_nome, valor_cobrado: a.valor_cobrado, comissao_percentual: a.comissao_percentual }];
                 const servicosCell = itens.map(i => `
                     <div style="display:flex; align-items:center; gap:6px; margin:2px 0;">
-                        <span class="badge badge-blue">${i.servico_nome}</span>
+                        <span class="badge badge-blue">${escapeHtml(i.servico_nome)}</span>
                         <span style="font-size:0.78rem; color:var(--text-muted);">R$ ${Number(i.valor_cobrado).toFixed(2)}</span>
-                        <span class="badge badge-gold">${i.comissao_percentual}%</span>
+                        ${owner ? '<span class="badge badge-gold">' + Number(i.comissao_percentual) + '%</span>' : ''}
                     </div>
                 `).join('');
                 return `
@@ -2699,22 +2716,64 @@
                     <td>
                         <div style="display:flex; align-items:center; gap:8px;">
                             <i class="fas fa-user" style="color: var(--gold-primary); font-size: 0.8rem;"></i>
-                            <strong>${a.barbeiro_nome}</strong>
+                            <strong>${escapeHtml(a.barbeiro_nome)}</strong>
                             ${a.barbeiro_is_dono ? '<i class="fas fa-crown" style="color: var(--gold-primary);" title="Proprietário"></i>' : ''}
                         </div>
                     </td>
                     <td>${servicosCell}</td>
-                    <td style="font-weight:700;">R$ ${Number(a.valor_cobrado).toFixed(2)}</td>
-                    <td><span class="badge badge-gold">${Number(a.comissao_percentual).toFixed(1)}%</span></td>
-                    <td style="color: var(--emerald); font-weight:700;">R$ ${Number(a.valor_comissao).toFixed(2)}</td>
-                    <td style="color: var(--text-muted); font-size: 0.85rem;">${a.observacao || '-'}</td>
+                    <td style="font-weight:700;">R$ ${(Number(a.valor_cobrado) + Number(a.valor_tinta || 0)).toFixed(2)}</td>
+                    ${owner ? '<td><span class="badge badge-gold">' + Number(a.comissao_percentual).toFixed(1) + '%</span></td>' : ''}
+                    ${owner ? '<td style="color: var(--emerald); font-weight:700;">R$ ' + Number(a.valor_comissao).toFixed(2) + '</td>' : ''}
+                    <td style="color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(a.observacao || '-')}</td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-small" data-excluir-atendimento="${index}" title="Excluir este atendimento">
+                            <i class="fas fa-trash" aria-hidden="true"></i> Excluir
+                        </button>
+                    </td>
                 </tr>
             `;
             }).join('');
+            tbody.querySelectorAll('[data-excluir-atendimento]').forEach(botao => {
+                botao.addEventListener('click', () => {
+                    excluirAtendimento(atendimentos[Number(botao.dataset.excluirAtendimento)], botao);
+                });
+            });
+        }
+
+        async function excluirAtendimento(atendimento, botao) {
+            if (botao.disabled) return;
+            const total = Number(atendimento.valor_cobrado) + Number(atendimento.valor_tinta || 0);
+            const valor = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const data = new Date(atendimento.data_hora).toLocaleString('pt-BR');
+            const confirmado = confirm(
+                'Excluir o atendimento #' + atendimento.id + ' de ' + atendimento.barbeiro_nome + ', em ' + data + ', no total de ' + valor + '? Todos os serviços deste atendimento serão apagados. Os valores de serviços, tinta e comissões serão removidos dos relatórios financeiros. Esta ação não pode ser desfeita.'
+            );
+            if (!confirmado) return;
+            botao.disabled = true;
+            try {
+                const res = await fetch(API_URL + '/atendimentos/' + atendimento.id, { method: 'DELETE', headers: { 'X-Relatorio-Token': relatorioToken() } });
+                if (!res.ok) {
+                    const erro = await res.json().catch(() => ({}));
+                    showToast(erro.error || 'Não foi possível excluir o atendimento.', 'error');
+                    return;
+                }
+                showToast('Atendimento excluído. Seus valores foram removidos dos relatórios.', 'success');
+                const atualizacoes = [loadHistorico()];
+                if (relatorioToken()) {
+                    atualizacoes.push(loadHistoricoDono(), loadRelatorio());
+                }
+                await Promise.all(atualizacoes);
+            } catch (err) {
+                showToast('Falha de comunicação. Atualize o histórico para conferir se o atendimento foi excluído.', 'error');
+            } finally {
+                botao.disabled = false;
+            }
         }
 
         // Relatórios Financeiros
         async function loadRelatorio() {
+            const tokenSolicitado = relatorioToken();
+            if (!tokenSolicitado) return;
             const dataInicio = document.getElementById('rel-data-inicio').value;
             const dataFim = document.getElementById('rel-data-fim').value;
             
@@ -2731,9 +2790,10 @@
             
             try {
                 const [resComissoes, resGeral] = await Promise.all([
-                    fetch(urlComissoes, { headers: { 'X-Relatorio-Token': relatorioToken() } }),
-                    fetch(urlGeral, { headers: { 'X-Relatorio-Token': relatorioToken() } })
+                    fetch(urlComissoes, { headers: { 'X-Relatorio-Token': tokenSolicitado } }),
+                    fetch(urlGeral, { headers: { 'X-Relatorio-Token': tokenSolicitado } })
                 ]);
+                if (tokenSolicitado !== relatorioToken()) return;
                 
                 if (resComissoes.status === 401 || resGeral.status === 401) {
                     removerTokenRelatorio();
@@ -2743,21 +2803,24 @@
                 
                 const relatorio = await resComissoes.json();
                 const geral = await resGeral.json();
+                if (tokenSolicitado !== relatorioToken()) return;
                 
                 // Renderizar KPIs Gerais
                 const containerGeral = document.getElementById('stats-geral');
                 containerGeral.innerHTML = `
-                    <div class="kpi-card">
+                    <div class="kpi-card"><div class="kpi-top"><span class="kpi-title">Atendimentos do dono</span></div><div class="kpi-value">R$ ${(geral.total_comissao_dono || 0).toFixed(2)}</div><div class="kpi-footer">100% dos serviços e tintas que ele atende</div></div>
+                    <div class="kpi-card"><div class="kpi-top"><span class="kpi-title">Total destinado ao dono</span></div><div class="kpi-value">R$ ${((geral.total_comissao_dono || 0) + (geral.total_barbearia || 0)).toFixed(2)}</div><div class="kpi-footer">Atendimentos próprios + parte da barbearia, antes de despesas</div></div>
+                                        <div class="kpi-card">
                         <div class="kpi-top">
                             <span class="kpi-title">Faturamento Total</span>
                             <div class="kpi-icon-badge kpi-icon-gold"><i class="fas fa-coins"></i></div>
                         </div>
-                        <div class="kpi-value">R$ ${(geral.total_geral || 0).toFixed(2)}</div>
+                        <div class="kpi-value">R$ ${((geral.total_geral || 0) + (geral.total_tinta || 0)).toFixed(2)}</div>
                         <div class="kpi-footer"><i class="fas fa-receipt"></i> ${geral.total_atendimentos || 0} atendimentos realizados</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-top">
-                            <span class="kpi-title">Comissões Equipe</span>
+                            <span class="kpi-title">Comissões dos colaboradores</span>
                             <div class="kpi-icon-badge kpi-icon-green"><i class="fas fa-hand-holding-usd"></i></div>
                         </div>
                         <div class="kpi-value" style="color: var(--emerald);">R$ ${(geral.total_colaboradores || 0).toFixed(2)}</div>
@@ -2765,11 +2828,11 @@
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-top">
-                            <span class="kpi-title">Lucro Barbearia</span>
+                            <span class="kpi-title">Parte da barbearia</span>
                             <div class="kpi-icon-badge kpi-icon-blue"><i class="fas fa-store"></i></div>
                         </div>
                         <div class="kpi-value" style="color: var(--sapphire);">R$ ${(geral.total_barbearia || 0).toFixed(2)}</div>
-                        <div class="kpi-footer"><i class="fas fa-chart-line"></i> Retenção líquida da casa</div>
+                        <div class="kpi-footer"><i class="fas fa-chart-line"></i> Após comissões, antes de despesas</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-top">
@@ -2788,7 +2851,7 @@
                         <div class="colaborador-card-header">
                             ${avatarBarbeiro(r, relatorio.indexOf(r))}
                             <div class="colaborador-info">
-                                <h4>${r.nome}</h4>
+                                <h4>${escapeHtml(r.nome)}${r.ativo === 0 ? " (inativo)" : ""}</h4>
                                 <span class="badge ${r.is_dono ? 'badge-gold' : 'badge-blue'}">${r.is_dono ? 'Proprietário' : 'Barbeiro'}</span>
                             </div>
                         </div>
@@ -2799,7 +2862,7 @@
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.85rem;">
                             <span style="color:var(--text-muted);"><i class="fas fa-wallet"></i> Faturado:</span>
-                            <strong>R$ ${(r.total_faturado || 0).toFixed(2)}</strong>
+                            <strong>R$ ${((r.total_faturado || 0) + (r.total_tinta || 0)).toFixed(2)}</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-top: 4px;">
                             <span style="color:var(--emerald); font-weight:600;"><i class="fas fa-hand-holding-usd"></i> Comissão:</span>
@@ -2809,21 +2872,22 @@
                 `).join('');
                 
                 // Tabela Detalhada
-                const totalGeral = geral.total_geral || 1;
+                const totalGeral = (geral.total_geral + geral.total_tinta) || 1;
                 const tbody = document.querySelector('#table-relatorio-detalhado tbody');
                 tbody.innerHTML = relatorio.map(r => {
-                    const faturado = r.total_faturado || 0;
+                    const faturado = (r.total_faturado || 0) + (r.total_tinta || 0);
                     const participacao = totalGeral > 0 ? ((faturado / totalGeral) * 100).toFixed(1) : 0;
                     return `
                     <tr>
                         <td>
                             <div style="display:flex; align-items:center; gap:8px;">
-                                <strong>${r.nome}</strong>
+                                <strong>${escapeHtml(r.nome)}${r.ativo === 0 ? " (inativo)" : ""}</strong>
                                 ${r.is_dono ? '<i class="fas fa-crown" style="color: var(--gold-primary); font-size: 0.75rem;"></i>' : ''}
                             </div>
                         </td>
                         <td>${r.total_atendimentos || 0}</td>
                         <td style="font-weight:700;">R$ ${faturado.toFixed(2)}</td>
+                        <td>R$ ${(r.total_tinta || 0).toFixed(2)}</td>
                         <td style="color: var(--emerald); font-weight:700;">R$ ${(r.total_comissao_colaborador || 0).toFixed(2)}</td>
                         <td style="color: var(--gold-light); font-weight:700;">R$ ${(r.total_barbearia || 0).toFixed(2)}</td>
                         <td style="min-width: 120px;">
@@ -2854,7 +2918,7 @@
             canvas.height = 340;
             
             const colors = ['#d4af37', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
-            const total = data.reduce((sum, r) => sum + (r.total_faturado || 0), 0);
+            const total = data.reduce((sum, r) => sum + (r.total_faturado || 0) + (r.total_tinta || 0), 0);
             
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -2873,7 +2937,7 @@
             const innerRadius = outerRadius * 0.6;
             
             data.forEach((r, i) => {
-                const value = r.total_faturado || 0;
+                const value = (r.total_faturado || 0) + (r.total_tinta || 0);
                 if (value <= 0) return;
                 const sliceAngle = (value / total) * 2 * Math.PI;
                 
@@ -2956,7 +3020,7 @@
             }
             const observacao = document.getElementById('atend-obs').value;
             const pigmentacao = document.getElementById('atend-pigmentacao').checked;
-            const valor_tinta = pigmentacao ? parseFloat(document.getElementById('atend-valor-tinta').value || 0) : 0;
+            const valor_tinta = parseFloat(document.getElementById('atend-valor-tinta').value || 0);
             
             try {
                 const res = await fetch(`${API_URL}/atendimentos`, {
@@ -2970,7 +3034,7 @@
                         })),
                         observacao,
                         valor_tinta,
-                        tem_pigmentacao: pigmentacao ? 1 : 0
+                        tem_pigmentacao: (pigmentacao || valor_tinta > 0) ? 1 : 0
                     })
                 });
                 
@@ -3046,15 +3110,16 @@
 
         async function deleteBarbeiro(id) {
             if (confirm('Deseja realmente desativar este barbeiro?')) {
-                await fetch(`${API_URL}/barbeiros/${id}`, { method: 'DELETE' });
+                if (!await salvarAlteracao(`${API_URL}/barbeiros/${id}`, { method: 'DELETE' })) return;
                 showToast('Barbeiro desativado.', 'success');
                 loadBarbeiros();
             }
         }
 
         async function deleteServico(id) {
+            if (cachedServicos.find(s => s.id === id)?.apenas_dono) { showToast("Serviços exclusivos do dono não podem ser excluídos.", "error"); return; }
             if (confirm('Deseja realmente desativar este serviço?')) {
-                await fetch(`${API_URL}/servicos/${id}`, { method: 'DELETE' });
+                if (!await salvarAlteracao(`${API_URL}/servicos/${id}`, { method: 'DELETE' })) return;
                 showToast('Serviço desativado.', 'success');
                 loadServicos();
             }
@@ -3075,6 +3140,7 @@
             document.getElementById('edit-barb-id').value = id;
             document.getElementById('edit-barb-nome').value = nome;
             document.getElementById('edit-barb-comissao').value = comissao;
+            document.getElementById('edit-barb-comissao').disabled = !!cachedBarbeiros.find(b => b.id == id)?.is_dono;
             const barbeiro = cachedBarbeiros.find(b => b.id == id);
             document.getElementById('btn-edit-trocar-foto').onclick = () => trocarFoto(id);
             document.getElementById('btn-edit-remover-foto').onclick = () => removerFotoEdit(id);
@@ -3110,11 +3176,11 @@
             const nome = document.getElementById('edit-barb-nome').value;
             const comissao = document.getElementById('edit-barb-comissao').value;
             
-            await fetch(`${API_URL}/barbeiros/${id}`, {
+            if (!await salvarAlteracao(`${API_URL}/barbeiros/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, comissao_percentual: parseFloat(comissao) })
-            });
+            })) return;
             
             closeEditModal();
             showToast('Barbeiro atualizado!', 'success');
@@ -3130,11 +3196,11 @@
             const comissaoRaw = document.getElementById('edit-serv-comissao-fixa').value;
             const comissao_fixa_pct = comissaoRaw === '' ? null : parseFloat(comissaoRaw);
             
-            await fetch(`${API_URL}/servicos/${id}`, {
+            if (!await salvarAlteracao(`${API_URL}/servicos/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nome, valor: parseFloat(valor), apenas_dono, comissao_fixa_pct })
-            });
+            })) return;
             
             closeEditServicoModal();
             showToast('Serviço atualizado!', 'success');
