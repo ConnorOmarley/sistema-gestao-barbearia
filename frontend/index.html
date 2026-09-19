@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Barbearia Michael Barber - Sistema de Gestão Premium</title>
 
     <!-- Favicon (Logo da Barbearia) -->
@@ -1706,6 +1706,7 @@
         }
     </style>
     <link rel="stylesheet" href="owner-ui.css">
+    <link rel="stylesheet" href="mobile.css">
 </head>
 <body>
 
@@ -2205,10 +2206,10 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-triangle-exclamation" style="color: var(--ruby);"></i> Confirmar ação</h3>
-                <button class="modal-close-btn" onclick="fecharModalConfirmar()"><i class="fas fa-times"></i></button>
+                <button class="modal-close-btn" aria-label="Fechar janela" onclick="fecharModalConfirmar()"><i class="fas fa-times"></i></button>
             </div>
             <div id="confirm-mensagem" style="color: var(--text-muted); font-size: 0.92rem; line-height: 1.6; margin-bottom: 26px;"></div>
-            <div style="display:flex; gap: 12px;">
+            <div class="modal-actions" style="display:flex; gap: 12px;">
                 <button class="btn btn-danger" id="confirm-botao-sim" style="flex: 1;">
                     <i class="fas fa-trash-alt"></i> Sim, confirmar
                 </button>
@@ -2223,7 +2224,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-user-edit" style="color: var(--gold-primary);"></i> Editar Barbeiro</h3>
-                <button class="modal-close-btn" onclick="closeEditModal()"><i class="fas fa-times"></i></button>
+                <button class="modal-close-btn" aria-label="Fechar janela" onclick="closeEditModal()"><i class="fas fa-times"></i></button>
             </div>
             <form id="form-editar-barbeiro">
                 <input type="hidden" id="edit-barb-id">
@@ -2255,7 +2256,7 @@
                         <input type="number" id="edit-barb-comissao" step="0.01" min="0" max="100" required>
                     </div>
                 </div>
-                <div style="display:flex; gap: 12px; margin-top: 24px;">
+                <div class="modal-actions" style="display:flex; gap: 12px; margin-top: 24px;">
                     <button type="submit" class="btn btn-success" style="flex: 1;">Salvar Alterações</button>
                     <button type="button" class="btn btn-outline" onclick="closeEditModal()" style="flex: 1;">Cancelar</button>
                 </div>
@@ -2268,7 +2269,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-edit" style="color: var(--gold-primary);"></i> Editar Serviço</h3>
-                <button class="modal-close-btn" onclick="closeEditServicoModal()"><i class="fas fa-times"></i></button>
+                <button class="modal-close-btn" aria-label="Fechar janela" onclick="closeEditServicoModal()"><i class="fas fa-times"></i></button>
             </div>
             <form id="form-editar-servico">
                 <input type="hidden" id="edit-serv-id">
@@ -2303,7 +2304,7 @@
                         <input type="number" id="edit-serv-comissao-fixa" step="0.01" min="0" max="100" placeholder="Vazio = padrão do barbeiro, 0 = só o dono ganha">
                     </div>
                 </div>
-                <div style="display:flex; gap: 12px; margin-top: 24px;">
+                <div class="modal-actions" style="display:flex; gap: 12px; margin-top: 24px;">
                     <button type="submit" class="btn btn-success" style="flex: 1;">Salvar Alterações</button>
                     <button type="button" class="btn btn-outline" onclick="closeEditServicoModal()" style="flex: 1;">Cancelar</button>
                 </div>
@@ -2316,7 +2317,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-lock" style="color: var(--gold-primary);"></i> Área do Dono</h3>
-                <button class="modal-close-btn" onclick="closeSenhaRelatorioModal()"><i class="fas fa-times"></i></button>
+                <button class="modal-close-btn" aria-label="Fechar janela" onclick="closeSenhaRelatorioModal()"><i class="fas fa-times"></i></button>
             </div>
             <form id="form-senha-relatorio" autocomplete="off">
                 <div id="senha-relatorio-status" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9rem;"></div>
@@ -2336,7 +2337,7 @@
                         </div>
                     </div>
                 </div>
-                <div style="display:flex; gap: 12px; margin-top: 24px;">
+                <div class="modal-actions" style="display:flex; gap: 12px; margin-top: 24px;">
                     <button type="submit" class="btn btn-success" style="flex: 1;" id="senha-relatorio-botao">Acessar Relatórios</button>
                     <button type="button" class="btn btn-outline" onclick="closeSenhaRelatorioModal()" style="flex: 1;">Cancelar</button>
                 </div>
@@ -3686,5 +3687,6 @@
         atualizarUIacessoDono();
     </script>
     <script src="owner-ui.js"></script>
+    <script src="mobile.js"></script>
 </body>
 </html>
