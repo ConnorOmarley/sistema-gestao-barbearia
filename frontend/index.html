@@ -1845,7 +1845,7 @@
                             <div class="switch-container">
                                 <div class="switch-label-group">
                                     <span class="switch-title">Pigmentação / Tinta</span>
-                                    <span class="switch-subtitle">Lucro da tinta vai para o Dono</span>
+                                    <span class="switch-subtitle">Valor da tinta destinado à barbearia</span>
                                 </div>
                                 <label class="toggle-switch">
                                     <input type="checkbox" id="atend-pigmentacao">
@@ -1922,8 +1922,8 @@
             <section id="relatorio" class="tab-section">
                 <div class="section-header">
                     <div>
-                        <h2><i class="fas fa-chart-pie"></i> Relatórios & Performance Financeira</h2>
-                        <p class="section-subtitle">Acompanhe receitas com tinta, comissões e a parte da barbearia por período</p>
+                        <h2><i class="fas fa-chart-pie"></i> Relatório financeiro</h2>
+                        <p class="section-subtitle">Veja quanto entrou, as comissões da equipe e o resultado da barbearia.</p>
                     </div>
                 </div>
 
@@ -1966,9 +1966,9 @@
                 <!-- EQUIPE -->
                 <div class="rel-subaba" id="rel-sub-equipe" data-tab="equipe" style="display: none;">
                     <div class="card-header-title">
-                        <i class="fas fa-award"></i> Desempenho Individual por Colaborador
+                        <i class="fas fa-award"></i> Comissões por barbeiro
                     </div>
-                    <div class="colaboradores-grid" id="stats-colaboradores"></div>
+                    <p class="owner-note equipe-note">Selecione <strong>Esta Semana</strong> ou informe as datas do fechamento para conferir o repasse de cada barbeiro. Valores calculados; o pagamento não é registrado aqui. Os atendimentos do dono entram integralmente na barbearia.</p><div class="colaboradores-grid" id="stats-colaboradores"></div>
 
                     <div class="card-header-title" style="margin-top: 22px;">
                         <i class="fas fa-table"></i> Detalhamento Financeiro
@@ -1981,8 +1981,8 @@
                                     <th>Atendimentos</th>
                                     <th>Total com tinta</th>
                                     <th>Tinta incluída</th>
-                                    <th>Comissão Paga</th>
-                                    <th>Parte Barbearia</th>
+                                    <th>Comissão calculada</th>
+                                    <th>Para a barbearia</th>
                                     <th>Participação</th>
                                 </tr>
                             </thead>
@@ -1996,7 +1996,7 @@
                     <div class="financeiro-intro">
                         <div>
                             <h3><i class="fas fa-scale-balanced"></i> Visão financeira</h3>
-                            <p>Recebimentos, despesas e saldo operacional do período selecionado.</p>
+                            <p>Entenda a composição das entradas e os gastos do período.</p>
                         </div>
                         <span class="financeiro-periodo-badge"><i class="fas fa-calendar-days"></i> Mesmo período do relatório</span>
                     </div>
@@ -2838,6 +2838,9 @@
             const valorTinta = parseFloat(inputTinta.value || 0);
 
             document.getElementById('preview-barbeiro').textContent = barbeiro ? barbeiro.nome : '--';
+            const atendimentoDono = barbeiro?.is_dono == 1;
+            document.getElementById('preview-comissao-taxa').parentElement.hidden = atendimentoDono;
+            document.getElementById('preview-comissao-valor').parentElement.hidden = atendimentoDono;
 
             if (barbeiro) {
                 const dono = barbeiro.is_dono == 1;
@@ -2859,7 +2862,7 @@
                 }
 
                 const total = valorServicos + valorTinta;
-                const parteBarbearia = total - comissaoBarbeiro;
+                const parteBarbearia = dono ? total : total - comissaoBarbeiro;
                 const pctExibido = total > 0 ? ((comissaoBarbeiro / total) * 100).toFixed(1) : 0;
 
                 document.getElementById('preview-servico').textContent = nomes.length ? nomes.join(' + ') : '--';
@@ -3280,11 +3283,14 @@
 
         // Relatórios Financeiros
         let relatorioCache = null;
+        let relatorioRequest = 0;
         async function loadRelatorio() {
             const tokenSolicitado = relatorioToken();
             if (!tokenSolicitado) return;
             const dataInicio = document.getElementById('rel-data-inicio').value;
             const dataFim = document.getElementById('rel-data-fim').value;
+            const requestAtual = ++relatorioRequest;
+            if (dataInicio && dataFim && dataInicio > dataFim) { showToast('A data inicial deve ser anterior à final.', 'error'); return; }
             
             let urlComissoes = `${API_URL}/relatorio/comissoes?`;
             let urlGeral = `${API_URL}/relatorio/geral?`;
@@ -3302,7 +3308,7 @@
                     fetch(urlComissoes, { headers: { 'X-Relatorio-Token': tokenSolicitado } }),
                     fetch(urlGeral, { headers: { 'X-Relatorio-Token': tokenSolicitado } })
                 ]);
-                if (tokenSolicitado !== relatorioToken()) return;
+                if (requestAtual !== relatorioRequest || tokenSolicitado !== relatorioToken()) return;
                 
                 if (resComissoes.status === 401 || resGeral.status === 401) {
                     removerTokenRelatorio();
@@ -3313,50 +3319,15 @@
                 if (!resComissoes.ok || !resGeral.ok) throw new Error('Não foi possível carregar o relatório. Verifique as datas.');
                 const relatorio = await resComissoes.json();
                 const geral = await resGeral.json();
-                if (tokenSolicitado !== relatorioToken()) return;
+                if (requestAtual !== relatorioRequest || tokenSolicitado !== relatorioToken()) return;
                 relatorioCache = relatorio;
                 
-                // Renderizar KPIs Gerais
-                const containerGeral = document.getElementById('stats-geral');
-                containerGeral.innerHTML = `
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <span class="kpi-title">Total destinado ao dono</span>
-                            <div class="kpi-icon-badge kpi-icon-gold"><i class="fas fa-crown"></i></div>
-                        </div>
-                        <div class="kpi-value" style="color: var(--gold-light);">R$ ${((geral.total_comissao_dono || 0) + (geral.total_barbearia || 0)).toFixed(2)}</div>
-                        <div class="kpi-footer"><i class="fas fa-coins"></i> Atendimentos próprios + parte da barbearia, antes de despesas</div>
-                    </div>
-                                        <div class="kpi-card">
-                        <div class="kpi-top">
-                            <span class="kpi-title">Faturamento Total</span>
-                            <div class="kpi-icon-badge kpi-icon-gold"><i class="fas fa-coins"></i></div>
-                        </div>
-                        <div class="kpi-value">R$ ${((geral.total_geral || 0) + (geral.total_tinta || 0)).toFixed(2)}</div>
-                        <div class="kpi-footer"><i class="fas fa-receipt"></i> ${geral.total_atendimentos || 0} atendimentos realizados</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <span class="kpi-title">Comissões dos colaboradores</span>
-                            <div class="kpi-icon-badge kpi-icon-green"><i class="fas fa-hand-holding-usd"></i></div>
-                        </div>
-                        <div class="kpi-value" style="color: var(--emerald);">R$ ${(geral.total_colaboradores || 0).toFixed(2)}</div>
-                        <div class="kpi-footer"><i class="fas fa-check"></i> Repassado aos profissionais</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top">
-                            <span class="kpi-title">Parte da barbearia</span>
-                            <div class="kpi-icon-badge kpi-icon-blue"><i class="fas fa-store"></i></div>
-                        </div>
-                        <div class="kpi-value" style="color: var(--sapphire);">R$ ${(geral.total_barbearia || 0).toFixed(2)}</div>
-                        <div class="kpi-footer"><i class="fas fa-chart-line"></i> Após comissões, antes de despesas</div>
-                    </div>
-                `;
+                renderResumoFinanceiro(geral);
                 
                 renderFinanceiro(geral);
                 // Renderizar Cards de Colaboradores
                 const containerColaboradores = document.getElementById('stats-colaboradores');
-                containerColaboradores.innerHTML = relatorio.map(r => `
+                containerColaboradores.innerHTML = relatorio.filter(r => !r.is_dono).map(r => `
                     <div class="colaborador-card">
                         <div class="colaborador-card-header">
                             ${avatarBarbeiro(r, relatorio.indexOf(r))}
@@ -3375,11 +3346,11 @@
                             <strong>R$ ${((r.total_faturado || 0) + (r.total_tinta || 0)).toFixed(2)}</strong>
                         </div>
                         <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-top: 4px;">
-                            <span style="color:var(--emerald); font-weight:600;"><i class="fas fa-hand-holding-usd"></i> Comissão:</span>
+                            <span style="color:var(--emerald); font-weight:600;"><i class="fas fa-hand-holding-usd"></i> Repasse calculado:</span>
                             <span style="color:var(--emerald); font-weight:700;">R$ ${(r.total_comissao_colaborador || 0).toFixed(2)}</span>
                         </div>
                     </div>
-                `).join('');
+                `).join('') || '<p class="owner-note">Nenhum barbeiro da equipe no período.</p>';
                 
                 // Tabela Detalhada
                 const totalGeral = (geral.total_geral + geral.total_tinta) || 1;
@@ -3399,8 +3370,8 @@
                         <td>${r.total_atendimentos || 0}</td>
                         <td style="font-weight:700;">R$ ${faturado.toFixed(2)}</td>
                         <td>R$ ${(r.total_tinta || 0).toFixed(2)}</td>
-                        <td style="color: var(--emerald); font-weight:700;">R$ ${(r.total_comissao_colaborador || 0).toFixed(2)}</td>
-                        <td style="color: var(--gold-light); font-weight:700;">R$ ${(r.total_barbearia || 0).toFixed(2)}</td>
+                        <td style="color: var(--emerald); font-weight:700;">${r.is_dono ? '—' : moedaUI(r.total_comissao_colaborador)}</td>
+                        <td style="color: var(--gold-light); font-weight:700;">${moedaUI(r.is_dono ? faturado : r.total_barbearia)}</td>
                         <td style="min-width: 120px;">
                             <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:600;">
                                 <span>${participacao}%</span>
@@ -3415,6 +3386,7 @@
                     : htmlVazio(7, 'fa-chart-simple', 'Sem dados para exibir neste período.');
                 
             } catch (err) {
+                if (requestAtual !== relatorioRequest || tokenSolicitado !== relatorioToken()) return;
                 showToast(err.message || 'Erro ao carregar relatório.', 'error');
             }
         }
@@ -3427,8 +3399,8 @@
 
         // Filtro em Chips
         function selectPeriodoChip(periodo, autoLoad = true) {
-            document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
-            const targetBtn = Array.from(document.querySelectorAll('.chip-btn')).find(b => 
+            document.querySelectorAll('#relatorio .chip-btn').forEach(btn => btn.classList.remove('active'));
+            const targetBtn = Array.from(document.querySelectorAll('#relatorio .chip-btn')).find(b =>
                 b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${periodo}'`)
             );
             if (targetBtn) targetBtn.classList.add('active');

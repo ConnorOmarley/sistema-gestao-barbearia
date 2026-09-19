@@ -64,3 +64,38 @@
  .brand-text p { font-size: .65rem; letter-spacing: 1px; }
  .live-clock-badge { font-size: .75rem; }
 }
+
+/* Relatório: uma hierarquia única para entradas, repasses e resultado. */
+.preview-row[hidden] { display: none; }
+#relatorio .section-header { margin-bottom: 24px; }
+#relatorio .filters-bar { box-shadow: none; }
+#relatorio .rel-subtabs { gap: 8px; }
+#stats-geral { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+#stats-geral .kpi-card { min-width: 0; box-shadow: none; }
+#stats-geral .kpi-title { text-transform: none; letter-spacing: 0; font-size: .85rem; line-height: 1.4; }
+#stats-geral .kpi-value { font-variant-numeric: tabular-nums; font-size: clamp(1.3rem, 2.2vw, 2rem); overflow-wrap: anywhere; }
+#stats-geral .kpi-footer { line-height: 1.6; border: 0; margin-top: 12px; padding-top: 0; }
+#stats-geral .resultado-destaque { background: linear-gradient(135deg, rgba(212,175,55,.14), rgba(212,175,55,.04)); border-color: rgba(212,175,55,.45); }
+.resultado-destaque .kpi-value { color: var(--gold-light); }
+#stats-geral .owner-negative { color: #fda4af; }
+.resumo-financeiro-note, .equipe-note { font-size: .84rem; max-width: 900px; color: var(--text-muted); }
+.financeiro-composicao { display: grid; grid-template-columns: 1fr auto 1fr auto 1.2fr; gap: 24px; padding: 24px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); align-items: center; }
+.financeiro-composicao > div { display: grid; gap: 8px; min-width: 0; }
+.financeiro-composicao span { color: var(--text-muted); font-size: .85rem; }
+.financeiro-composicao strong { font-size: clamp(1.1rem, 2vw, 1.5rem); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.financeiro-composicao .composicao-total strong { color: var(--gold-light); }
+.financeiro-composicao .composicao-sinal { font-size: 1.3rem; color: var(--text-dim); }
+.financeiro-panel { box-shadow: none; }
+.pagamento-item, .gasto-categoria-item { border: 0; border-bottom: 1px solid var(--border-subtle); border-radius: 0; background: none; padding: 14px 0; }
+.pagamento-item strong, .gasto-categoria-item strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 4px; }
+@media (max-width: 1100px) { #stats-geral { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 650px) {
+ #relatorio .rel-subtabs { display: flex; }
+ #relatorio .rel-subtab { flex: 1; padding: 12px 8px; font-size: .8rem; }
+ .financeiro-composicao { grid-template-columns: 1fr; gap: 12px; padding: 18px; }
+ .financeiro-composicao > div { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+ .financeiro-composicao .composicao-sinal { display: none; }
+ .composicao-total { border-top: 1px solid var(--border-subtle); padding-top: 14px; }
+}
+@media (max-width: 420px) { #stats-geral { grid-template-columns: 1fr; } }

@@ -66,24 +66,48 @@ function limparAreaDono() {
     document.querySelectorAll('.owner-dialog').forEach(dialog=>{dialog.close();dialog.querySelector('form')?.reset();});
     for(const id of ['modal-editar-barbeiro','modal-editar-servico']) document.getElementById(id).style.display='none';
 }
+
+function renderResumoFinanceiro(geral) {
+    const recebido = Number(geral.total_recebido || 0);
+    const comissoes = Number(geral.total_colaboradores || 0);
+    const gastos = Number(geral.total_gastos || 0);
+    const resultado = Math.round((recebido - comissoes - gastos) * 100) / 100;
+    const cards = [
+        ['Total recebido', recebido, 'fa-wallet', 'green', (geral.total_atendimentos || 0) + ' atendimentos · serviços e tinta'],
+        ['Comissões da equipe', comissoes, 'fa-users', 'blue', 'Repasse calculado para os barbeiros'],
+        ['Gastos registrados', gastos, 'fa-arrow-trend-down', 'red', 'Despesas e retiradas do período'],
+        ['Resultado da barbearia', resultado, 'fa-store', 'gold', 'Recebido − comissões da equipe − gastos']
+    ];
+    document.getElementById('stats-geral').innerHTML = cards.map(([label, value, icon, tone, note], index) =>
+        '<div class="kpi-card financeiro-kpi financeiro-kpi-' + tone + (index === 3 ? ' resultado-destaque' : '') + '"><div class="kpi-top"><span class="kpi-title">' + label + '</span><span class="financeiro-icon"><i class="fas ' + icon + '" aria-hidden="true"></i></span></div><div class="kpi-value' + (value < 0 ? ' owner-negative' : '') + '">' + moedaUI(value) + '</div><div class="kpi-footer">' + note + '</div></div>'
+    ).join('');
+    let note = document.getElementById('resumo-financeiro-note');
+    if (!note) {
+        note = document.createElement('p'); note.id = 'resumo-financeiro-note'; note.className = 'owner-note resumo-financeiro-note';
+        document.getElementById('stats-geral').after(note);
+    }
+    note.textContent = 'Os atendimentos do dono pertencem à barbearia. Apenas as comissões da equipe são descontadas do resultado. Este valor considera os gastos registrados, inclusive retiradas do dono.';
+    const inicio = document.getElementById('rel-data-inicio').value;
+    const fim = document.getElementById('rel-data-fim').value;
+    const formatar = value => value.split('-').reverse().join('/');
+    const periodo = inicio && fim ? formatar(inicio) + ' a ' + formatar(fim) : inicio ? 'Desde ' + formatar(inicio) : fim ? 'Até ' + formatar(fim) : 'Todo o período';
+    document.querySelector('.financeiro-periodo-badge').textContent = periodo;
+}
+
 function renderFinanceiro(geral) {
     const container=document.getElementById('financeiro-extra');
     if(!container)return;
-    const cards=[
-        ['Receitas de serviços',geral.total_geral,'fa-scissors','gold'],
-        ['Tinta cobrada',geral.total_tinta,'fa-droplet','blue'],
-        ['Total recebido',geral.total_recebido,'fa-wallet','green'],
-        ['Gastos totais',geral.total_gastos,'fa-arrow-trend-down','red'],
-        ['Saldo operacional',geral.saldo_operacional,'fa-scale-balanced','gold']
-    ];
     const pagamentos=Object.entries(pagamentosUI).map(([method,label])=>({
         method,label,total:(geral.pagamentos||[]).find(p=>p.metodo_pagamento===method)?.total || 0
     }));
     const categorias=geral.gastos_por_categoria||[];
     container.innerHTML=`
-        <section class="financeiro-section">
-            <div class="financeiro-section-heading"><div><h4>Resumo do período</h4><p>Valores consolidados dos atendimentos e despesas.</p></div></div>
-            <div class="kpi-grid financeiro-kpis">${cards.map(([label,value,icon,tone])=>`<div class="kpi-card financeiro-kpi financeiro-kpi-${tone}"><div class="kpi-top"><span class="kpi-title">${escapeHtml(label)}</span><span class="financeiro-icon"><i class="fas ${icon}"></i></span></div><div class="kpi-value ${Number(value)<0?'owner-negative':''}">${moedaUI(value)}</div></div>`).join('')}</div>
+        <section class="financeiro-section financeiro-composicao" aria-label="Composição dos recebimentos">
+            <div><span>Serviços</span><strong>${moedaUI(geral.total_geral)}</strong></div>
+            <span class="composicao-sinal" aria-hidden="true">+</span>
+            <div><span>Tinta cobrada</span><strong>${moedaUI(geral.total_tinta)}</strong></div>
+            <span class="composicao-sinal" aria-hidden="true">=</span>
+            <div class="composicao-total"><span>Total recebido</span><strong>${moedaUI(geral.total_recebido)}</strong></div>
         </section>
         <section class="financeiro-section financeiro-columns">
             <div class="custom-card financeiro-panel">
@@ -95,7 +119,7 @@ function renderFinanceiro(geral) {
                 <div class="gastos-categoria-list">${categorias.length ? categorias.map(g=>`<div class="gasto-categoria-item"><span>${escapeHtml(g.categoria)}</span><strong>${moedaUI(g.total)}</strong></div>`).join('') : '<div class="financeiro-empty"><i class="fas fa-receipt"></i><span>Nenhum gasto no período.</span></div>'}</div>
             </div>
         </section>
-        <p class="owner-note financeiro-note"><i class="fas fa-circle-info"></i> Saldo operacional = total recebido − gastos totais. As comissões são apresentadas separadamente na aba Equipe.</p>`;
+        <p class="owner-note financeiro-note"><i class="fas fa-circle-info"></i> O total recebido inclui serviços e tinta. Confira o resultado após comissões e gastos no Resumo; os repasses por barbeiro estão na aba Equipe.</p>`;
 }
 async function loadGastos() {
     const seq=++sequenciaGastos;
