@@ -1,9 +1,39 @@
-let finSequence=0, finData=null, finAction=null, comparisonSequence=0;
+let finSequence=0, finData=null, finAction=null, comparisonSequence=0, finExtrato=[];
 const finMoney=moedaUI;
 const finDate=value=>value?new Date(value.includes('T')?value:value+'T12:00:00').toLocaleDateString('pt-BR'):'Sem previsão';
 const finMoment=value=>value===dataLocalISO(new Date())?new Date().toISOString():dataInputParaUtcFim(value);
+const finPeriodoTexto=()=>{const i=document.getElementById('rel-data-inicio')?.value,f=document.getElementById('rel-data-fim')?.value,curto=v=>v?v.split('-').reverse().join('/'):'';return i&&f?curto(i)+' a '+curto(f):i?'a partir de '+curto(i):f?'até '+curto(f):'todo o período';};
 const finButton=(action,label,value='',extra='')=>`<button type="button" class="btn btn-outline btn-small" data-fin="${action}" data-id="${value}" ${extra}>${label}</button>`;
 const finValue=(label,value,note,emphasis=false)=>`<div class="kpi-card ${emphasis?'resultado-destaque':''}"><div class="kpi-title">${label}</div><div class="kpi-value ${value<0?'owner-negative':''}">${finMoney(value)}</div><div class="kpi-footer">${note}</div></div>`;
+
+const finTipoBadge=m=>{
+  if(m.tipo==='recebimento')return m.descricao&&m.descricao.indexOf('Cartão')===0
+    ?'<span class="badge fin-badge fin-badge-cartao"><i class="fas fa-credit-card"></i> Cartão</span>'
+    :'<span class="badge fin-badge fin-badge-entrada"><i class="fas fa-arrow-down"></i> Entrada</span>';
+  if(m.tipo==='comissao')return '<span class="badge fin-badge fin-badge-comissao"><i class="fas fa-hand-holding-dollar"></i> Comissão</span>';
+  if(m.tipo==='gasto')return '<span class="badge fin-badge fin-badge-gasto"><i class="fas fa-arrow-up"></i> Despesa</span>';
+  if(m.tipo==='aporte')return '<span class="badge fin-badge fin-badge-aporte"><i class="fas fa-circle-plus"></i> Aporte</span>';
+  if(m.tipo==='abertura')return '<span class="badge fin-badge fin-badge-abertura"><i class="fas fa-flag"></i> Saldo inicial</span>';
+  return '';
+};
+const finDiaExtrato=iso=>new Date(iso.includes('T')?iso:iso+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+function renderExtrato(extrato){
+  finExtrato=extrato;
+  let html='',dataAnterior='';
+  for(const m of extrato){
+    const data=(m.data_hora||'').slice(0,10),estornado=!!m.estornado_em;
+    const acao=(!estornado&&!(m.automatico&&m.tipo==='recebimento'))
+      ?finButton('estorno','Desfazer',m.id,'title="Desfazer este lançamento e devolver a obrigação pendente, quando houver"')
+      :'';
+    if(data&&data!==dataAnterior){html+=`<div class="fin-date-sep">${finDiaExtrato(m.data_hora)}</div>`;dataAnterior=data;}
+    html+=`<div class="fin-list-row${estornado?' fin-cancelled':''}">
+      <div class="fin-extrato-desc">${finTipoBadge(m)}<strong>${escapeHtml(m.descricao)}</strong><small>${finDate(m.data_hora)}${estornado?' · <span class="fin-estornado-tag"><i class="fas fa-rotate-left"></i> Desfeito · '+escapeHtml(m.motivo||'motivo não informado')+'</span>':''}</small></div>
+      <strong class="${m.valor<0?'owner-negative':'fin-entrada'}">${finMoney(m.valor)}</strong>
+      ${acao}
+    </div>`;
+  }
+  return html||'<p class="fin-empty">Nenhum movimento no período.</p>';
+}
 
 document.querySelector('[data-subtab="financeiro"]').innerHTML='<i class="fas fa-wallet"></i> Caixa';
 document.querySelector('#rel-sub-financeiro .financeiro-intro h3').textContent='Caixa da barbearia';
@@ -59,12 +89,12 @@ renderResumoFinanceiro=function(g) {
   document.getElementById('stats-geral').innerHTML=[
     finValue('Faturamento',g.faturamento,(g.total_atendimentos||0)+' atendimentos · serviços e tinta'),
     finValue('Comissões da equipe',g.comissoes,'Geradas pelos atendimentos do período'),
-    finValue('Despesas e taxas',Number(g.despesas||0)+Number(g.taxas_cartao||0),'Pelas datas das despesas, pagas ou a pagar'),
+    finValue('Despesas e taxas',Number(g.despesas||0)+Number(g.taxas_cartao||0),'Gastos (pagos ou a pagar) + taxas de cartão do período'),
     finValue('Lucro da barbearia',g.lucro,'Faturamento − comissões − despesas e taxas',true)
   ].join('');
   let note=document.getElementById('resumo-financeiro-note');
   if(!note){note=document.createElement('p');note.id='resumo-financeiro-note';note.className='owner-note';document.getElementById('stats-geral').after(note);}
-  note.textContent='Retiradas do dono no período: '+finMoney(g.retiradas)+'. Retiradas e aportes não alteram o lucro. O lucro considera as despesas e taxas registradas; confira o dinheiro disponível na aba Caixa.';
+  note.textContent='Resumo do período: faturamento − comissões − despesas e taxas = lucro. Retiradas do dono ('+finMoney(g.retiradas)+') e aportes não alteram o lucro: retirada tira dinheiro do caixa, aporte coloca. Veja o dinheiro em mãos na aba Caixa.';
 };
 renderFinanceiroEquipe=function(rows) {
   if(rows.some(r=>typeof r.comissao_pendente!=='number')){document.getElementById('stats-colaboradores').innerHTML='<p class="owner-note">Reinicie o sistema para consultar os pagamentos de comissões.</p>';return;}
@@ -88,7 +118,7 @@ renderFinanceiro=async function() {
       <section class="custom-card fin-panel"><h4>Comissões a pagar <span>${finMoney(p.comissoes_pendentes)}</span></h4><p class="owner-note">Todos os períodos. Para pagar apenas uma semana, use a aba Equipe.</p>${equipe||'<p class="fin-empty">Nenhuma comissão pendente.</p>'}</section>
       <section class="custom-card fin-panel"><h4>Contas e retiradas a pagar <span>${finMoney(p.contas_pendentes)}</span></h4>${contas||'<p class="fin-empty">Nenhuma conta pendente.</p>'}</section>
       <section class="custom-card fin-panel"><h4>Cartões a receber <span>${finMoney(p.cartao_a_receber)}</span></h4><p class="owner-note">Informe a taxa da operadora e confirme quando o dinheiro entrar. Não registre a mesma taxa novamente em Gastos.</p>${card||'<p class="fin-empty">Nenhum cartão pendente.</p>'}</section>
-      <section class="custom-card fin-panel"><h4>Extrato do período selecionado</h4><p class="owner-note">Até 200 movimentos mais recentes do período. Estornos corrigem registros incorretos e ficam no histórico; não representam um novo pagamento.</p>${extrato.map(m=>`<div class="fin-list-row ${m.estornado_em?'fin-cancelled':''}"><div><strong>${escapeHtml(m.descricao)}</strong><small>${finDate(m.data_hora)} · ${escapeHtml(m.tipo)}${m.estornado_em?' · Estornado: '+escapeHtml(m.motivo):''}</small></div><strong class="${m.valor<0?'owner-negative':''}">${finMoney(m.valor)}</strong>${!m.estornado_em&&!(m.automatico&&m.tipo==='recebimento')?finButton('estorno','Corrigir / estornar',m.id):''}</div>`).join('')||'<p class="fin-empty">Nenhum movimento no período.</p>'}</section>`;
+      <section class="custom-card fin-panel"><h4>Extrato <small class="fin-periodo-texto">Período: ${finPeriodoTexto()}</small></h4><div class="fin-legend"><span><i class="fas fa-circle" style="color:var(--emerald)"></i> Entrada</span><span><i class="fas fa-circle" style="color:#fb7185"></i> Saída</span><span><i class="fas fa-rotate-left" style="color:var(--text-dim)"></i> Desfeito</span></div><p class="owner-note">Até 200 movimentos mais recentes do período. Para consertar um lançamento errado, use <strong>Desfazer</strong>: o valor sai do saldo e a obrigação ligada (comissão, conta ou cartão) volta a ficar pendente.</p>${renderExtrato(extrato)}</section>`;
   } catch(error){if(seq===finSequence&&token===relatorioToken())el.innerHTML='<p class="owner-negative" role="alert">'+escapeHtml(error.message)+'</p>';}
 };
 function limparFinanceiroCompleto(){finSequence++;comparisonSequence++;finData=null;finAction=null;document.getElementById('fin-dialog')?.close();document.getElementById('fin-action-form')?.reset();document.querySelector('#fin-compare-table tbody')?.replaceChildren();document.getElementById('fin-compare-status').textContent='';}
@@ -108,21 +138,30 @@ function abrirMovimento(action,value) {
   else if(['receber','previsao'].includes(action)){const c=finData.cartoes.find(c=>c.atendimento_id===Number(value));fee=c.taxa;finAction.bruto=c.bruto;title=action==='receber'?'Receber cartão #'+value:'Taxa e previsão do cartão #'+value;note='Valor bruto: '+finMoney(c.bruto)+'. A taxa será descontada da entrada e do lucro uma única vez.';if(action==='previsao')selectedDate=c.previsto_em||today;}
   else if(action==='abertura'){title='Saldo inicial';amount=0;note='Informe o dinheiro que já existia antes do primeiro movimento do sistema. Não informe o saldo de hoje, pois as entradas registradas já estão sendo somadas.';if(finData.primeiro_movimento){const d=new Date(finData.primeiro_movimento);d.setDate(d.getDate()-1);selectedDate=dataLocalISO(d);}}
   else if(action==='aporte'){title='Aporte na barbearia';note='Dinheiro adicional colocado no negócio. Aumenta o caixa, sem aumentar o lucro.';}
-  else if(action==='estorno'){title='Corrigir lançamento';note='Use apenas para corrigir um registro incorreto. O movimento será desconsiderado no saldo e a obrigação voltará a ficar pendente, quando aplicável. O histórico do estorno será mantido.';}
+  else if(action==='estorno'){
+    const m=finExtrato.find(x=>x.id===Number(value));
+    title='Desfazer lançamento';
+    note=(m?'<div class="fin-reversal-info">'+escapeHtml(m.descricao)+' · '+finMoney(m.valor)+'</div>':'')
+      +'O valor será retirado do saldo. Se houver uma comissão, conta ou cartão ligado a este lançamento, ele volta a ficar pendente para você registrar o valor correto. Preencha o motivo abaixo.';
+  }
   document.getElementById('fin-dialog-title').textContent=title;
-  document.getElementById('fin-dialog-note').textContent=note;
+  document.getElementById('fin-dialog-note').innerHTML=note;
   document.getElementById('fin-action-error').textContent='';
   document.getElementById('fin-value').value=amount;
   document.getElementById('fin-value').min=action==='abertura'?'0':'0.01';
-  document.getElementById('fin-fee').value=fee;
+  const feeInput=document.getElementById('fin-fee');
+  feeInput.value=fee>0?fee:'';
+  feeInput.placeholder='0,00 (sem taxa)';
   document.getElementById('fin-date').value=selectedDate;
   document.getElementById('fin-date-label').textContent=action==='previsao'?'Data prevista':'Data do registro';
-  document.getElementById('fin-description-label').textContent=action==='estorno'?'Motivo da correção':'Descrição';
+  document.getElementById('fin-description-label').textContent=action==='estorno'?'Motivo (obrigatório)':'Descrição';
   document.getElementById('fin-description').value=action==='abertura'?'Saldo anterior ao primeiro registro':'';
   for(const [key,visible] of Object.entries({value:!['receber','previsao','estorno'].includes(action),fee:['receber','previsao'].includes(action),date:action!=='estorno',description:['aporte','abertura','estorno'].includes(action)})){
-    document.getElementById('fin-'+key+'-group').hidden=!visible;document.getElementById('fin-'+key).required=visible;
+    document.getElementById('fin-'+key+'-group').hidden=!visible;document.getElementById('fin-'+key).required=visible&&key!=='fee';
   }
-  document.getElementById('fin-submit').textContent=action==='estorno'?'Confirmar correção':'Registrar';
+  const submit=document.getElementById('fin-submit');
+  submit.textContent=action==='estorno'?'Desfazer lançamento':'Registrar';
+  submit.className='btn '+(action==='estorno'?'btn-danger':'btn-success');
   document.getElementById('fin-dialog').showModal();
 }
 document.addEventListener('click',event=>{
@@ -138,7 +177,7 @@ document.getElementById('fin-action-form').onsubmit=async event=>{
     if(a.action!=='estorno')body.data_hora=finMoment(document.getElementById('fin-date').value);
     if(['equipe','equipe-tudo'].includes(a.action)){path='/financeiro/comissoes/pagar';Object.assign(body,a.period||{},{barbeiro_id:a.id,valor:document.getElementById('fin-value').value});}
     else if(a.action==='conta'){path='/financeiro/contas/'+a.id+'/pagar';body.valor=document.getElementById('fin-value').value;}
-    else if(['receber','previsao'].includes(a.action)){path='/financeiro/cartoes/'+a.id+'/'+(a.action==='receber'?'receber':'previsao');body.taxa=document.getElementById('fin-fee').value;if(a.action==='previsao'){delete body.data_hora;body.previsto_em=document.getElementById('fin-date').value;}}
+    else if(['receber','previsao'].includes(a.action)){path='/financeiro/cartoes/'+a.id+'/'+(a.action==='receber'?'receber':'previsao');body.taxa=Number(document.getElementById('fin-fee').value)||0;if(a.action==='previsao'){delete body.data_hora;body.previsto_em=document.getElementById('fin-date').value;}}
     else if(a.action==='estorno'){path='/financeiro/movimentos/'+a.id+'/estornar';body.motivo=document.getElementById('fin-description').value;}
     else {path='/financeiro/movimentos';Object.assign(body,{tipo:a.action,valor:document.getElementById('fin-value').value,descricao:document.getElementById('fin-description').value});}
     // Freeze a submitted request so a lost response can be retried without paying twice.
@@ -181,3 +220,6 @@ document.getElementById('fin-compare-form').onsubmit=async event=>{
     tbody.innerHTML=Object.entries(labels).map(([key,label])=>`<tr class="${key==='lucro'?'fin-profit-row':''}"><td>${label}</td><td>${finMoney(result.atual[key])}</td><td>${finMoney(result.anterior[key])}</td><td>${finMoney(result.diferencas[key].valor)}</td><td>${result.diferencas[key].percentual===null?'—':result.diferencas[key].percentual.toLocaleString('pt-BR',{maximumFractionDigits:1})+'%'}</td></tr>`).join('');
   }catch(error){if(seq===comparisonSequence){status.textContent=error.message;tbody.innerHTML='<tr><td colspan="5">Não foi possível comparar os períodos.</td></tr>';}}
 };
+
+// Mantém a sub-aba do relatório ao recarregar a página.
+(function(){const saved=localStorage.getItem('relSubTab');if(typeof mostrarSubAbaRelatorio==='function'&&['resumo','equipe','financeiro','comparar'].includes(saved)&&saved!=='resumo')mostrarSubAbaRelatorio(saved);})();

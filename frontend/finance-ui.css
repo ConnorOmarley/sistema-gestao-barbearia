@@ -23,6 +23,23 @@
 #fin-dialog { max-width: 560px; }
 #fin-action-error { line-height: 1.5; }
 #fin-compare-status { line-height: 1.6; }
+.fin-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 14px; color: var(--text-muted); font-size: .78rem; font-weight: 600; }
+.fin-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.fin-legend i.fa-circle { font-size: .45rem; }
+.fin-date-sep { margin-top: 18px; padding: 8px 2px; border-bottom: 1px dashed var(--border-subtle); color: var(--gold-light); font-size: .76rem; font-weight: 700; text-transform: capitalize; letter-spacing: .4px; }
+.fin-extrato-desc .badge { margin-right: 8px; }
+.fin-badge { font-size: .62rem; padding: 2px 8px; gap: 5px; }
+.fin-badge-entrada { background: rgba(16,185,129,.14); color: #34d399; border: 1px solid rgba(16,185,129,.35); }
+.fin-badge-gasto { background: rgba(244,63,94,.13); color: #fb7185; border: 1px solid rgba(244,63,94,.35); }
+.fin-badge-comissao { background: rgba(212,175,55,.14); color: var(--gold-light); border: 1px solid rgba(212,175,55,.35); }
+.fin-badge-cartao { background: rgba(59,130,246,.14); color: #93c5fd; border: 1px solid rgba(59,130,246,.35); }
+.fin-badge-aporte { background: rgba(16,185,129,.10); color: #6ee7b7; border: 1px dashed rgba(16,185,129,.4); }
+.fin-badge-abertura { background: rgba(148,163,184,.12); color: #cbd5e1; border: 1px solid rgba(148,163,184,.3); }
+.fin-entrada { color: var(--emerald); }
+.fin-estornado-tag { color: var(--text-dim); font-style: italic; }
+.fin-reversal-info { padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--border-gold); border-radius: 10px; background: rgba(212,175,55,.07); font-weight: 700; overflow-wrap: anywhere; }
+.fin-panel h4 small.fin-periodo-texto { display: block; margin-top: 4px; color: var(--text-dim); font-size: .72rem; font-weight: 600; }
+#relatorio .section-header .financeiro-periodo-badge { flex: none; }
 @media(max-width:1100px){.fin-cash-kpis{grid-template-columns:minmax(0,1fr);}}
 @media(max-width:650px){
  #relatorio .rel-subtabs { grid-template-columns: repeat(2,minmax(0,1fr)); }

@@ -1944,6 +1944,9 @@
                         <h2><i class="fas fa-chart-pie"></i> Relatório financeiro</h2>
                         <p class="section-subtitle">Veja quanto entrou, as comissões da equipe e o resultado da barbearia.</p>
                     </div>
+                    <span class="financeiro-periodo-badge" id="rel-periodo-badge" title="Estes são os dias considerados em Resumo, Equipe e Extrato. Use os filtros acima para mudar.">
+                        <i class="fas fa-calendar-check"></i> <span id="rel-periodo-badge-text">Período: todo o período</span>
+                    </span>
                 </div>
 
                 <div class="period-chips">
@@ -3306,9 +3309,23 @@
         // Relatórios Financeiros
         let relatorioCache = null;
         let relatorioRequest = 0;
+        function atualizarBadgePeriodo() {
+            const badge = document.getElementById('rel-periodo-badge-text');
+            if (!badge) return;
+            const inicio = document.getElementById('rel-data-inicio').value;
+            const fim = document.getElementById('rel-data-fim').value;
+            const curto = v => v ? v.split('-').reverse().join('/') : '';
+            const texto = inicio && fim ? `Período: ${curto(inicio)} a ${curto(fim)}`
+                : inicio ? `Período: a partir de ${curto(inicio)}`
+                : fim ? `Período: até ${curto(fim)}`
+                : 'Período: todo o período';
+            badge.textContent = texto;
+        }
+
         async function loadRelatorio() {
             const tokenSolicitado = relatorioToken();
             if (!tokenSolicitado) return;
+            atualizarBadgePeriodo();
             const dataInicio = document.getElementById('rel-data-inicio').value;
             const dataFim = document.getElementById('rel-data-fim').value;
             const requestAtual = ++relatorioRequest;
@@ -3416,6 +3433,7 @@
         
         // Sub-abas do relatório
         function mostrarSubAbaRelatorio(nome) {
+            localStorage.setItem('relSubTab', nome);
             document.querySelectorAll('.rel-subtab').forEach(b => b.classList.toggle('active', b.dataset.subtab === nome));
             document.querySelectorAll('.rel-subaba').forEach(d => d.style.display = d.dataset.tab === nome ? '' : 'none');
         }
