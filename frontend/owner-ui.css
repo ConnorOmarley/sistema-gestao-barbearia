@@ -42,10 +42,9 @@
 .historico-dono-status.success { color: var(--emerald); }
 .historico-dono-status.error { color: #fb7185; }
 .historico-dono-status.loading { color: var(--gold-light); }
-.owner-history-table th { white-space: normal; min-width: 112px; line-height: 1.35; }
-.owner-history-table th:first-child { min-width: 130px; }
-.owner-history-table th:nth-child(3) { min-width: 220px; }
+.owner-history-table th { white-space: normal; line-height: 1.35; }
 .owner-history-table td { vertical-align: top; }
+.owner-history-table th, .owner-history-table td { padding-left: 12px; padding-right: 12px; }
 .owner-history-table-wrap { box-shadow: 0 8px 28px rgba(0,0,0,.16); }
 @media (max-width: 650px) { .owner-item { grid-template-columns: 1fr 1fr; } .owner-dialog { padding: 16px; } .owner-actions .btn { flex: 1; } }
 @media (max-width: 650px) {

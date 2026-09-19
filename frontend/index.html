@@ -76,7 +76,7 @@
 
         /* Container Principal */
         .app-container {
-            max-width: 1400px;
+            max-width: 100%;
             margin: 0 auto;
             display: flex;
             align-items: stretch;
@@ -800,6 +800,12 @@
             flex: 1;
             min-width: 200px;
             margin-bottom: 0;
+        }
+
+        /* Botões soltos na barra de filtros ficam inline e não empilham */
+        .filters-bar > .btn {
+            flex: 0 0 auto;
+            width: auto;
         }
 
         /* Stats Grid (KPIs) */
@@ -1607,7 +1613,18 @@
             to { opacity: 1; transform: none; }
         }
 
+        /* Formulário + tabela lado a lado: dá mais espaço para a tabela */
+        #barbeiros > .form-grid-2,
+        #servicos > .form-grid-2 {
+            grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+        }
+
         /* ============ TABLET / MOBILE ============ */
+        @media (max-width: 1400px) {
+            /* Compactar apenas o espaçamento lateral das tabelas em notebooks */
+            th, td { padding-left: 12px; padding-right: 12px; }
+        }
+
         @media (max-width: 1024px) {
             .app-container { display: block; }
 
@@ -3210,13 +3227,16 @@
                 const itens = (a.itens && a.itens.length)
                     ? a.itens
                     : [{ servico_nome: a.servico_nome, valor_cobrado: a.valor_cobrado, comissao_percentual: a.comissao_percentual }];
-                const servicosCell = itens.map(i => `
-                    <div style="display:flex; align-items:center; gap:6px; margin:2px 0;">
-                        <span class="badge badge-blue">${escapeHtml(i.servico_nome)}</span>
-                        <span style="font-size:0.78rem; color:var(--text-muted);">R$ ${Number(i.valor_cobrado).toFixed(2)}</span>
-                        ${owner ? '<span class="badge badge-gold">' + Number(i.comissao_percentual) + '%</span>' : ''}
-                    </div>
-                `).join('');
+                const servicosCell = `
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; min-width:160px;">
+                        ${itens.map(i => `
+                            <span style="display:inline-flex; align-items:center; gap:6px;">
+                                <span class="badge badge-blue">${escapeHtml(i.servico_nome)}</span>
+                                <span style="font-size:0.78rem; color:var(--text-muted);">R$ ${Number(i.valor_cobrado).toFixed(2)}</span>
+                                ${owner ? '<span class="badge badge-gold" title="Comissão aplicada a este serviço">' + Number(i.comissao_percentual) + '%</span>' : ''}
+                            </span>
+                        `).join('')}
+                    </div>`;
                 return `
                 <tr>
                     <td>
