@@ -10,6 +10,9 @@
 .fin-list-row > :first-child { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
 .fin-list-row small { display: block; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
 .fin-row-actions, .fin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+.fin-toolbar { align-items: flex-start; }
+.fin-toolbar-group { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,.03); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 8px 10px; }
+.fin-toolbar-label { display: inline-flex; align-items: center; gap: 6px; font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); padding: 0 6px; }
 .fin-empty { color: var(--text-muted); padding: 18px 0 4px; }
 .fin-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 18px; margin-bottom: 20px; border: 1px solid var(--border-gold); border-radius: 12px; background: rgba(212,175,55,.06); }
 .fin-notice p { flex: 1 1 350px; line-height: 1.6; font-size: .85rem; }
