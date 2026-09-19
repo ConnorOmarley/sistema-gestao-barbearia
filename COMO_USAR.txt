@@ -1,5 +1,5 @@
 BARBEARIA MICHAEL BARBER — COMO USAR
-Versão: gestão de pagamentos, caixa financeiro, gastos e resultado financeiro
+Versão: gestão de pagamentos, caixa financeiro, gastos, resultado financeiro e reset do sistema
 
 1. INICIAR E ENCERRAR
 Abra iniciar_sistema.bat e aguarde a página http://localhost:3000.
@@ -156,7 +156,21 @@ para backend/barbearia.db; inicie novamente.
 A restauração recupera TODOS os registros, o caixa e a senha daquele
 momento. Sincronização do OneDrive não substitui esse procedimento.
 
-11. VALIDAÇÃO
+11. ZERAR O SISTEMA PARA RECOMEÇAR
+Depois dos testes, para entregar o sistema zerado para o uso real:
+1. Encerre o sistema (pressione ENTER na janela) e feche o navegador.
+2. Execute resetar_sistema.bat (na mesma pasta do sistema).
+3. Digite ZERAR e pressione ENTER para confirmar.
+Ele apaga todos os registros (atendimentos, caixa, gastos, cadastros,
+senha e fotos) e volta ao estado de fábrica: somente o dono padrão
+Michael Barber e os 4 serviços iniciais. Antes de apagar, deixa uma
+cópia do banco em backend\barbearia-ANTES-DO-RESET-<data>.db.
+4. Abra iniciar_sistema.bat: o sistema recria a base padrão.
+5. Configure novamente a senha da Área do Dono e o Saldo inicial.
+Dica: faça os testes primeiro e só depois zere e configure os cadastros
+definitivos - assim nada precisa ser refeito.
+
+12. VALIDAÇÃO
 Os testes automatizados usam bancos isolados em backend/.testdata.
 Execute, na pasta backend: npm test.
 Eles verificam regras de comissão, pagamentos, gastos, caixa, estornos,
