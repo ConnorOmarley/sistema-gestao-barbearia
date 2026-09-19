@@ -1,5 +1,5 @@
 BARBEARIA MICHAEL BARBER — COMO USAR
-Versão: gestão de pagamentos, gastos e resultado financeiro
+Versão: gestão de pagamentos, caixa financeiro, gastos e resultado financeiro
 
 1. INICIAR E ENCERRAR
 Abra iniciar_sistema.bat e aguarde a página http://localhost:3000.
@@ -9,9 +9,9 @@ Só retire o pen drive depois do encerramento. Fechar a aba do navegador
 não encerra o servidor. Se a porta estiver ocupada, feche a outra instância.
 
 2. DONO E BARBEIROS
-O barbeiro pode registrar atendimentos e consultar o histórico público
-do dia. Não pode editar/excluir atendimentos, administrar cadastros,
-consultar relatórios financeiros, gastos ou backups.
+O barbeiro pode registrar atendimentos e consultar o histórico público do
+dia. Não pode editar/excluir atendimentos, administrar cadastros,
+consultar relatórios financeiros, caixa, gastos ou backups.
 O dono entra pelo botão Área do Dono. No primeiro uso, configure sua
 senha; depois informe a senha existente. Ao sair, clique novamente em
 Área do Dono. A sessão é encerrada também quando o servidor reinicia.
@@ -34,6 +34,8 @@ Confirme o resumo e clique Confirmar Atendimento.
 Escolha Dinheiro, Cartão ou Pix. Cada atendimento usa um único método.
 Atendimentos antigos sem método informado são migrados para Dinheiro.
 O histórico público mostra somente o dia atual e não mostra comissões.
+Pagamento em Cartão não entra no caixa imediatamente: fica em
+"Cartões a receber" até você confirmar o recebimento (ver seção 8).
 
 5. COMISSÕES, PIGMENTAÇÃO E TINTA
 Nos atendimentos do dono, serviços e tinta pertencem integralmente a ele.
@@ -43,8 +45,9 @@ O serviço Pigmentação mantém comissão 0% para colaboradores.
 O dono escolhe quem pode executá-lo: Serviços > Editar pigmentação >
 Apenas para o Dono. Marcado: exclusivo do dono. Desmarcado: colaboradores
 também podem fazer. A escolha permanece após reiniciar o sistema.
-Compra de tinta é um gasto separado. Nunca desconte a compra da comissão
-do atendimento. O valor de tinta cobrado do cliente é receita.
+Compra de tinta é um gasto separado (categoria tinta). Nunca desconte a
+compra da comissão do atendimento. O valor de tinta cobrado do cliente é
+receita.
 
 6. EDITAR E EXCLUIR ATENDIMENTOS
 Entre na Área do Dono > Histórico do Dono.
@@ -53,58 +56,110 @@ Em Editar, adicione, troque ou remova serviços, ajuste valores e tinta,
 mude o pagamento e a observação. Mantenha pelo menos um serviço.
 O profissional e a data original são preservados.
 Ao confirmar, as comissões são recalculadas pelas taxas atuais dos
-cadastros. Um backup é criado ANTES de salvar. Atendimento e itens são
-gravados juntos; falha na operação não pode deixar atualização parcial.
-A exclusão também é exclusiva do dono, pede confirmação e cria backup.
-Após salvar/excluir, os históricos e relatórios são atualizados.
+cadastros e o caixa é atualizado automaticamente (por exemplo, trocar um
+pagamento em Dinheiro por Cartão devolve o valor ao caixa e passa o cartão
+para "Cartões a receber"). Um backup é criado ANTES de salvar. Atendimento
+e itens são gravados juntos; falha na operação não pode deixar atualização
+parcial. A exclusão também é exclusiva do dono, pede confirmação e cria
+backup. Após salvar/excluir, os históricos e relatórios são atualizados.
 Registros excluídos não têm botão Desfazer. Recuperação exige restaurar
 um backup completo, que pode substituir registros posteriores.
 
-7. GASTOS
-Na Área do Dono > Gastos, clique Novo gasto.
-Informe categoria, descrição, valor positivo, data, pagamento e observação.
+7. GASTOS, CONTAS E RETIRADAS
+O dono registra gastos em Gastos > Novo gasto.
+Informe categoria, descrição, valor positivo, data da despesa (a que conta
+para o lucro), situação (A pagar ou Já pago), vencimento e, se já pago, a
+data em que o pagamento sai do caixa. Observação é opcional.
 Categorias: tinta, giletes, produtos, material, aluguel, energia,
 manutenção, retirada do dono e outros.
-Use Editar para corrigir um gasto e Excluir para removê-lo com confirmação.
-Use datas e categoria para filtrar; Todo o período limpa os filtros.
-O cartão da aba soma apenas os gastos filtrados.
-Gastos alteram o saldo operacional, mas não as comissões.
+Diferença importante:
+- Despesa ou conta = custo da barbearia: sai do caixa E reduz o lucro.
+- Retirada do dono = o lucro que você tira para si: sai só do caixa, sem
+  reduzir o lucro (senão o lucro seria contado duas vezes).
+Comissões NUNCA são registradas como gasto: pagam-se na sub-aba Equipe ou
+na aba Caixa do relatório.
+Gasto marcado como "A pagar" fica listado em "Contas e retiradas a pagar"
+(aba Caixa). Lá você usa Registrar pagamento para pagar parcial ou total;
+o valor sai do caixa na data informada. Enquanto pendente, ele fica
+"reservado" no cálculo do saldo livre.
+Use Editar para corrigir um gasto e Excluir para removê-lo com confirmação
+(Excluir cria backup). Use datas e categoria para filtrar; Todo o período
+limpa os filtros. Os resumos do topo refletem apenas os gastos filtrados.
 
-8. RELATÓRIOS FINANCEIROS
-Entre na Área do Dono > Relatórios Financeiros e selecione o período.
-Os primeiros cartões mostram:
-- Receitas de serviços.
-- Tinta cobrada.
-- Total recebido: serviços + tinta cobrada.
-- Gastos totais.
-- Saldo operacional: serviços + tinta cobrada - gastos.
-- Dinheiro recebido, Cartão recebido e Pix recebido.
-Os três métodos mostram FATURAMENTO recebido, antes das despesas.
-Não são lucro líquido por método. A soma dos métodos deve coincidir com
-o Total recebido. Comissões aparecem separadamente e não são descontadas
-da fórmula de saldo operacional prevista neste sistema.
-Abaixo há gastos por categoria, comissões e participação dos profissionais.
+8. CAIXA FINANCEIRO
+Entre em Relatórios Financeiros > sub-aba Financeiro (Caixa).
+No primeiro uso, informe o Saldo inicial: o dinheiro que JÁ EXISTIA antes
+do primeiro registro do sistema (pode ser zero). Esse lançamento aparece
+como "Saldo inicial" no extrato.
+O painel de posição mostra (posição atual, sem depender do filtro de
+período):
+- Saldo atual: dinheiro e conta juntos, entradas recebidas menos saídas pagas.
+- Valores reservados: comissões e contas ainda a pagar.
+- Saldo livre: saldo atual menos os valores reservados — o que sobra de
+  fato para gastar sem romper obrigações.
+Tela de ações:
+- Registrar aporte (Entrada): dinheiro adicional colocado no negócio.
+  Aumenta o caixa, sem aumentar o lucro.
+- Retirada do dono (Saída): você pega o lucro para si. Sai do caixa, sem
+  reduzir o lucro.
+- Nova despesa ou conta (Saída): abre o formulário de gasto (ver seção 7).
+Cartões a receber: cada venda em cartão fica aqui até você confirmar.
+Use "Taxa e previsão" para informar a taxa da operadora e a data prevista
+(o campo taxa vazio significa "sem taxa"). Use "Registrar recebimento"
+quando o dinheiro entrar: o valor líquido (bruto menos taxa) entra no saldo.
+A taxa é descontada do recebimento e também entra como despesa do lucro,
+uma única vez — não registre a mesma taxa novamente em Gastos.
+Comissões a pagar: comissões geradas ficam pendentes. Pague por barbeiro
+na sub-aba Equipe ou aqui. Você pode pagar parcial, mas nunca acima do
+pendente.
+Contas e retiradas a pagar: veja seção 7.
+Extrato do período selecionado: mostra os movimentos do período
+(recebimentos, comissões, despesas, aportes e saldo inicial), agrupados
+por dia e com etiquetas de Entrada/Saída. Para consertar um lançamento
+manual errado, use Desfazer: o valor sai do saldo e a obrigação ligada
+(comissão, conta ou cartão) volta a ficar pendente, com o motivo no
+histórico. Recebimento automático de atendimento não tem Desfazer —
+corrija o atendimento no Histórico do Dono.
+
+9. RELATÓRIOS FINANCEIROS
+Relatórios Financeiros usa o período escolhido nos chips (Hoje, Esta
+Semana, Este Mês, Este Ano, Todo o Período) ou nas datas manuais com o
+botão Atualizar. O selo no topo mostra o período em uso.
+Sub-abas:
+- Resumo: Faturamento (N atendimentos, serviços + tinta), Comissões da
+  equipe, Despesas e taxas (gastos + taxas de cartão do período) e Lucro
+  da barbearia = faturamento − comissões − despesas e taxas. Retiradas e
+  aportes não alteram o lucro. O dinheiro em mãos é visto na aba Caixa.
+- Equipe: comissões de cada barbeiro (gerada, já pago e falta pagar, com
+  botão Registrar pagamento) e a tabela de detalhamento (atendimentos,
+  total com tinta, comissão calculada, parte da barbearia e participação).
+- Financeiro: veja a seção 8 (Caixa financeiro).
+- Comparar: compara os resultados de dois períodos (meses completos, anos,
+  ano atual até hoje contra o mesmo período anterior, ou períodos
+  personalizados) em faturamento, comissões, despesas, taxas, lucro e
+  retiradas. Períodos em andamento ainda podem mudar.
 Os limites de período respeitam o dia local, incluindo sua hora final.
-Na troca de método de um atendimento, o valor sai do método anterior e
-entra no novo método. Compra de tinta aparece como despesa da categoria.
 
-9. BACKUPS E RESTAURAÇÃO
-Na Área do Dono > Backups, clique Criar backup agora e depois Baixar.
-Backups automáticos são criados a cada 5 minutos, mantendo os últimos 20.
-A edição/exclusão de atendimento também cria backup antes da alteração.
-O banco fica em backend/barbearia.db. Fotos ficam em frontend/assets/perfil.
-Arquivos barbearia-antes-migracao-*.db preservam o banco antes da migração
-e ficam fora da rotação de backups.
+10. BACKUPS E RESTAURAÇÃO
+Backups são automáticos: a cada 5 minutos o sistema grava uma cópia em
+backend/backups, mantendo as 20 mais recentes. A edição e a exclusão de
+atendimento também criam backup antes da alteração. Arquivos
+barbearia-antes-migracao-*.db preservam o banco antes de uma migração e
+ficam fora dessa rotação.
+O banco atual fica em backend/barbearia.db. Fotos ficam em
+frontend/assets/perfil.
 Para segurança, após encerrar o sistema copie a pasta inteira para outro
 dispositivo. Backup no mesmo pen drive não protege contra perda física.
-Para restaurar: encerre o sistema; guarde uma cópia do banco atual;
-copie o backup desejado para backend/barbearia.db; inicie novamente.
-A restauração recupera TODOS os registros e a senha daquele momento.
-Sincronização do OneDrive não substitui esse procedimento.
+Para restaurar: encerre o sistema; guarde uma cópia do banco atual; copie
+o conteúdo de um arquivo de backup (barbearia-<data>.db de backend/backups)
+para backend/barbearia.db; inicie novamente.
+A restauração recupera TODOS os registros, o caixa e a senha daquele
+momento. Sincronização do OneDrive não substitui esse procedimento.
 
-10. VALIDAÇÃO
+11. VALIDAÇÃO
 Os testes automatizados usam bancos isolados em backend/.testdata.
 Execute, na pasta backend: npm test.
-Eles verificam regras de comissão, pagamentos, gastos, filtros, edição,
-backup anterior, permissões, migração, reinício e integridade do banco.
+Eles verificam regras de comissão, pagamentos, gastos, caixa, estornos,
+filtros, edição, backup anterior, permissões, migração, reinício e
+integridade do banco.
 Para testar visualmente, use uma cópia do sistema e dados fictícios.
