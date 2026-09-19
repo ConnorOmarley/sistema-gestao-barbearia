@@ -6,6 +6,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import db, { backupDatabase, backupsDir, getConfig, setConfig, transaction, closeDatabase } from './database.js';
 import { invalid, id, name, percent, money, roundMoney, flag, isPigmentacao, period, dayBounds } from './rules.js';
 import { registerPhotoRoutes } from './photos.js';
+import { registerFinance, guardAttendance, syncAttendance, removeAttendance, guardExpense, syncExpense, removeExpense, expenseDetails, commissionDetails, profit } from './finance.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -77,6 +78,8 @@ function criarTokenRelatorio() {
   tokensRelatorio.add(value);
   return value;
 }
+
+registerFinance(app, requerAcessoRelatorio);
 
 app.get('/api/barbeiros', (req, res) => res.json(getAll('SELECT * FROM barbeiros WHERE ativo=1 ORDER BY is_dono DESC,id')));
 app.post('/api/barbeiros', (req, res) => {
@@ -177,6 +180,7 @@ app.post('/api/atendimentos', (req, res) => {
   const value=transaction(()=>{
     const atendimentoId=insert('INSERT INTO atendimentos (barbeiro_id,servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,data_hora,observacao,metodo_pagamento) VALUES (?,?,?,?,?,?,?,?,?,?)',[b.id,completos[0].servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,data_hora,observacao,metodo_pagamento]);
     salvarItens(atendimentoId, completos);
+    syncAttendance(atendimentoId);
     return atendimentoId;
   });
   res.json({id:value,barbeiro_id:b.id,servico_id:completos[0].servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,data_hora,metodo_pagamento,itens:completos});
@@ -184,6 +188,7 @@ app.post('/api/atendimentos', (req, res) => {
 app.put('/api/atendimentos/:id', requerAcessoRelatorio, (req,res)=>{
   const anterior=getOne('SELECT * FROM atendimentos WHERE id=?',[id(req.params.id)]);
   if(!anterior) invalid('Atendimento não encontrado.',404);
+  guardAttendance(anterior.id);
   if(!Array.isArray(req.body.itens) || !req.body.itens.length) invalid('Informe pelo menos um serviço.');
   const prepared=prepararAtendimento({...req.body, metodo_pagamento:req.body.metodo_pagamento ?? anterior.metodo_pagamento, observacao:req.body.observacao ?? anterior.observacao},anterior);
   const { completos,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,observacao,metodo_pagamento }=prepared;
@@ -192,6 +197,7 @@ app.put('/api/atendimentos/:id', requerAcessoRelatorio, (req,res)=>{
     db.run('UPDATE atendimentos SET servico_id=?,valor_cobrado=?,valor_tinta=?,tem_pigmentacao=?,comissao_percentual=?,valor_comissao=?,observacao=?,metodo_pagamento=? WHERE id=?',[completos[0].servico_id,valor_cobrado,valor_tinta,tem_pigmentacao,comissao_percentual,valor_comissao,observacao,metodo_pagamento,anterior.id]);
     db.run('DELETE FROM atendimento_itens WHERE atendimento_id=?',[anterior.id]);
     salvarItens(anterior.id,completos);
+    syncAttendance(anterior.id);
   });
   res.json({success:true,backup,id:anterior.id});
 });
@@ -218,25 +224,26 @@ function filtroSql(query, alias='') {
 app.get('/api/gastos',requerAcessoRelatorio,(req,res)=>{
   let {where,params}=filtroSql(req.query);
   if(req.query.categoria){if(!categoriasGastos.includes(req.query.categoria)) invalid('Categoria inválida.');where+=' AND categoria=?';params.push(req.query.categoria);}
-  res.json(getAll('SELECT * FROM gastos WHERE 1=1'+where+' ORDER BY data_hora DESC,id DESC',params));
+  res.json(expenseDetails(getAll('SELECT * FROM gastos WHERE 1=1'+where+' ORDER BY data_hora DESC,id DESC',params)));
 });
 app.post('/api/gastos',requerAcessoRelatorio,(req,res)=>{
   const g=camposGasto(req.body);
-  const value=transaction(()=>insert('INSERT INTO gastos (categoria,descricao,valor,metodo_pagamento,data_hora,observacao) VALUES (?,?,?,?,?,?)',Object.values(g)));
+  const value=transaction(()=>{const value=insert('INSERT INTO gastos (categoria,descricao,valor,metodo_pagamento,data_hora,observacao) VALUES (?,?,?,?,?,?)',Object.values(g));syncExpense(value,req.body);return value;});
   res.json({id:value,...g});
 });
 app.put('/api/gastos/:id',requerAcessoRelatorio,(req,res)=>{
   const old=getOne('SELECT * FROM gastos WHERE id=?',[id(req.params.id)]);
   if(!old) invalid('Gasto não encontrado.',404);
+  guardExpense(old.id);
   const g=camposGasto(req.body,old);
-  change('UPDATE gastos SET categoria=?,descricao=?,valor=?,metodo_pagamento=?,data_hora=?,observacao=? WHERE id=?',[...Object.values(g),old.id]);
+  transaction(()=>{db.run('UPDATE gastos SET categoria=?,descricao=?,valor=?,metodo_pagamento=?,data_hora=?,observacao=? WHERE id=?',[...Object.values(g),old.id]);syncExpense(old.id,req.body,old);});
   res.json({id:old.id,...g});
 });
 app.delete('/api/gastos/:id',requerAcessoRelatorio,(req,res)=>{
   const value=id(req.params.id);
   if(!getOne('SELECT id FROM gastos WHERE id=?',[value])) invalid('Gasto não encontrado.',404);
   const backup=basename(backupDatabase());
-  change('DELETE FROM gastos WHERE id=?',[value]);res.json({success:true,backup});
+  transaction(()=>{removeExpense(value);db.run('DELETE FROM gastos WHERE id=?',[value]);});res.json({success:true,backup});
 });
 app.get('/api/atendimentos', (req, res) => {
   const filtros=period(req.query);
@@ -253,7 +260,7 @@ app.get('/api/atendimentos', (req, res) => {
 app.delete('/api/atendimentos', requerAcessoRelatorio, (req,res)=>{
   if (req.body?.confirmacao !== 'APAGAR TODOS') invalid('Confirme a limpeza com APAGAR TODOS.');
   const backup=basename(backupDatabase());
-  change('DELETE FROM atendimentos');
+  transaction(()=>{for(const a of getAll('SELECT id FROM atendimentos'))removeAttendance(a.id);db.run('DELETE FROM atendimentos');});
   res.json({success:true,backup,message:'Todos os atendimentos foram limpos. A senha foi preservada.'});
 });
 app.delete('/api/atendimentos/:id',requerAcessoRelatorio,(req,res)=>{
@@ -261,7 +268,7 @@ app.delete('/api/atendimentos/:id',requerAcessoRelatorio,(req,res)=>{
   const a=getOne('SELECT * FROM atendimentos WHERE id=?',[value]);
   if (!a) invalid('Atendimento não encontrado.',404);
   backupDatabase();
-  change('DELETE FROM atendimentos WHERE id=?',[value]);
+  transaction(()=>{removeAttendance(value);db.run('DELETE FROM atendimentos WHERE id=?',[value]);});
   res.json({success:true});
 });
 
@@ -297,7 +304,7 @@ app.get('/api/relatorio/comissoes',requerAcessoRelatorio,(req,res)=>{
   if(f.data_inicio){condition+=' AND a.data_hora>=?';params.push(f.data_inicio);}
   if(f.data_fim){condition+=' AND a.data_hora<=?';params.push(f.data_fim);}
   const sql='SELECT b.id,b.nome,b.is_dono,b.ativo,b.foto,COUNT(a.id) AS total_atendimentos,ROUND(COALESCE(SUM(a.valor_cobrado),0),2) AS total_faturado,ROUND(COALESCE(SUM(a.valor_tinta),0),2) AS total_tinta,ROUND(COALESCE(SUM(a.valor_comissao),0),2) AS total_comissao_colaborador,ROUND(COALESCE(SUM(a.valor_cobrado+a.valor_tinta-a.valor_comissao),0),2) AS total_barbearia FROM barbeiros b LEFT JOIN atendimentos a ON b.id=a.barbeiro_id'+condition+' WHERE b.ativo=1 OR a.id IS NOT NULL GROUP BY b.id ORDER BY b.is_dono DESC,b.id';
-  res.json(getAll(sql,params));
+  res.json(commissionDetails(getAll(sql,params),req.query));
 });
 app.get('/api/relatorio/geral',requerAcessoRelatorio,(req,res)=>{
   const f=period(req.query);let where='';const params=[];
@@ -309,7 +316,7 @@ app.get('/api/relatorio/geral',requerAcessoRelatorio,(req,res)=>{
   const gastos_por_categoria=getAll('SELECT categoria,ROUND(SUM(valor),2) total FROM gastos WHERE 1=1'+gf.where+' GROUP BY categoria ORDER BY categoria',gf.params);
   const pagamentos=getAll('SELECT metodo_pagamento,ROUND(SUM(valor_cobrado+valor_tinta),2) total FROM atendimentos WHERE 1=1'+gf.where+' GROUP BY metodo_pagamento',gf.params);
   const total_recebido=roundMoney(geral.total_geral+geral.total_tinta);
-  res.json({...geral,total_recebido,total_gastos,saldo_operacional:roundMoney(total_recebido-total_gastos),gastos_por_categoria,pagamentos});
+  res.json({...geral,...profit(req.query),total_recebido,total_gastos,saldo_operacional:roundMoney(total_recebido-total_gastos),gastos_por_categoria,pagamentos});
 });
 app.get('/api/relatorio/atendimentos',requerAcessoRelatorio,(req,res)=>res.json(listAtendimentos(period(req.query))));
 app.post('/api/backup',requerAcessoRelatorio,(req,res)=>res.json({success:true,arquivo:basename(backupDatabase())}));

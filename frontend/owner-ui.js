@@ -16,7 +16,7 @@ document.querySelector('main').insertAdjacentHTML('beforeend', `
   <button class="btn btn-primary" id="filtrar-gastos">Filtrar</button><button class="btn btn-outline" id="limpar-filtros-gastos">Todo o período</button><button class="btn btn-success" id="novo-gasto">Novo gasto</button>
  </div>
  <div class="kpi-grid" id="gastos-resumo"></div>
- <div class="table-responsive"><table id="table-gastos"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Pagamento</th><th>Observação</th><th>Ações</th></tr></thead><tbody></tbody></table></div>
+ <div class="table-responsive"><table id="table-gastos"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Situação</th><th>Observação</th><th>Ações</th></tr></thead><tbody></tbody></table></div>
 </section>`);
 document.querySelector('#historico-dono .period-chips').insertAdjacentHTML('afterend', `
 <div class="filters-bar"><div class="form-group"><label for="hist-inicio">De</label><input type="date" id="hist-inicio"></div><div class="form-group"><label for="hist-fim">Até</label><input type="date" id="hist-fim"></div><button class="btn btn-primary" id="hist-filtrar">Filtrar</button><button class="btn btn-outline" id="hist-tudo">Todo o período</button></div>`);
@@ -47,7 +47,7 @@ async function ownerRequest(path, options={}) {
     const response=await fetch(API_URL+path,{...options,headers:{'Content-Type':'application/json',...options.headers,'X-Relatorio-Token':sessao}});
     if(sessao!==relatorioToken()) throw new Error('A sessão foi encerrada.');
     if(response.status===401){removerTokenRelatorio();abrirModalSenhaRelatorio();throw new Error('Entre novamente na Área do Dono.');}
-    if(!response.ok){const erro=await response.json().catch(()=>({}));throw new Error(erro.error || 'Não foi possível concluir a operação.');}
+    if(!response.ok){const erro=await response.json().catch(()=>({}));const failure=new Error(erro.error || 'Não foi possível concluir a operação.');failure.status=response.status;throw failure;}
     return response;
 }
 async function ownerJson(path,options){return (await ownerRequest(path,options)).json();}
@@ -60,6 +60,7 @@ function periodoUI(inicio,fim) {
 }
 function mensagemErro(error){showToast(error.message || 'Falha de comunicação. Confira os dados antes de tentar novamente.','error');}
 function limparAreaDono() {
+    if(typeof limparFinanceiroCompleto==='function')limparFinanceiroCompleto();
     sequenciaGastos++;gastosUI=[];servicosEdicaoUI=[];atendimentoEdicaoUI=null;
     for(const selector of ['#financeiro-extra','#gastos-resumo','#table-gastos tbody','#table-historico-dono tbody','#historico-dono-status','#edicao-itens']) document.querySelector(selector)?.replaceChildren();
     document.getElementById('historico-dono-status')?.classList.remove('success','error','loading');
@@ -134,7 +135,7 @@ async function loadGastos() {
         if(!rows.length){tbody.innerHTML='<tr><td colspan="7">Nenhum gasto encontrado.</td></tr>';return;}
         for(const g of rows){
             const tr=document.createElement('tr');
-            for(const value of [new Date(g.data_hora).toLocaleDateString('pt-BR'),g.categoria,g.descricao,moedaUI(g.valor),pagamentosUI[g.metodo_pagamento]||g.metodo_pagamento,g.observacao||'—']){
+            for(const value of [new Date(g.data_hora).toLocaleDateString('pt-BR'),g.categoria,g.descricao,moedaUI(g.valor),g.situacao==='pago'?'Pago':(g.situacao==='parcial'?'Parcial · falta ':'A pagar · ')+moedaUI(g.valor_pendente),g.observacao||'—']){
                 const td=document.createElement('td');td.textContent=value;tr.append(td);
             }
             const td=document.createElement('td');
@@ -150,6 +151,7 @@ function abrirGasto(g={}) {
     document.getElementById('form-gasto').reset();
     document.getElementById('titulo-gasto').textContent=g.id?'Editar gasto #'+g.id:'Novo gasto';
     for(const [id,value] of Object.entries({'gasto-id':g.id||'','gasto-categoria':g.categoria||'outros','gasto-data':dataLocalISO(g.data_hora?new Date(g.data_hora):new Date()),'gasto-descricao':g.descricao||'','gasto-valor':g.valor||'','gasto-pagamento':g.metodo_pagamento||'dinheiro','gasto-observacao':g.observacao||''}))document.getElementById(id).value=value;
+    prepararGastoFinanceiro(g);
     document.getElementById('dialog-gasto').showModal();
 }
 async function excluirGasto(g) {
@@ -162,7 +164,7 @@ document.getElementById('form-gasto').addEventListener('submit',async event=>{
     if(id && !confirm('Salvar as alterações deste gasto e atualizar o saldo?'))return;
     const old=gastosUI.find(g=>g.id===Number(id));
     const data=document.getElementById('gasto-data').value;
-    const body={categoria:document.getElementById('gasto-categoria').value,descricao:document.getElementById('gasto-descricao').value,valor:document.getElementById('gasto-valor').value,metodo_pagamento:document.getElementById('gasto-pagamento').value,data_hora:old && dataLocalISO(new Date(old.data_hora))===data?old.data_hora:dataInputParaUtcInicio(data),observacao:document.getElementById('gasto-observacao').value};
+    const body={situacao:document.getElementById('gasto-situacao').value,vencimento:document.getElementById('gasto-vencimento').value,pago_em:document.getElementById('gasto-situacao').value==='pago'?(old?.pago_em && dataLocalISO(new Date(old.pago_em))===document.getElementById('gasto-pago-em').value?old.pago_em:finMoment(document.getElementById('gasto-pago-em').value)):undefined,categoria:document.getElementById('gasto-categoria').value,descricao:document.getElementById('gasto-descricao').value,valor:document.getElementById('gasto-valor').value,metodo_pagamento:document.getElementById('gasto-pagamento').value,data_hora:old && dataLocalISO(new Date(old.data_hora))===data?old.data_hora:dataInputParaUtcInicio(data),observacao:document.getElementById('gasto-observacao').value};
     button.disabled=true;
     try{await ownerJson('/gastos'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(body)});document.getElementById('dialog-gasto').close();showToast('Gasto salvo.','success');await loadGastos();await loadRelatorio();}catch(error){mensagemErro(error);}finally{button.disabled=false;}
 });
@@ -222,4 +224,4 @@ document.getElementById('hist-tudo').onclick=()=>{histDonoInicio='';histDonoFim=
 atualizarUIacessoDono();
 if(relatorioToken() && ['gastos'].includes(localStorage.getItem('activeTab')))showTab(localStorage.getItem('activeTab'),false);
 
-function dataLocalISO(date) { return date.toISOString().slice(0, 10); }
+// Uses the local calendar date helper defined in index.html.

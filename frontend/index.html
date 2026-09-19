@@ -1707,6 +1707,7 @@
     </style>
     <link rel="stylesheet" href="owner-ui.css">
     <link rel="stylesheet" href="mobile.css">
+    <link rel="stylesheet" href="finance-ui.css">
 </head>
 <body>
 
@@ -3353,6 +3354,7 @@
                     </div>
                 `).join('') || '<p class="owner-note">Nenhum barbeiro da equipe no período.</p>';
                 
+                if (typeof renderFinanceiroEquipe === 'function') renderFinanceiroEquipe(relatorio);
                 // Tabela Detalhada
                 const totalGeral = (geral.total_geral + geral.total_tinta) || 1;
                 const tbody = document.querySelector('#table-relatorio-detalhado tbody');
@@ -3687,6 +3689,7 @@
         atualizarUIacessoDono();
     </script>
     <script src="owner-ui.js"></script>
+    <script src="finance-ui.js"></script>
     <script src="mobile.js"></script>
 </body>
 </html>

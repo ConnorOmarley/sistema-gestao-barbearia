@@ -1,0 +1,33 @@
+[hidden] { display: none !important; }
+.fin-cash-kpis { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.fin-cash-kpis .kpi-value { font-size: clamp(1.3rem,2.3vw,2rem); overflow-wrap: anywhere; }
+.fin-cash-kpis .kpi-footer { line-height: 1.5; }
+.fin-panel { margin: 22px 0; padding: 22px; }
+.fin-panel h4 { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 1rem; }
+.fin-panel h4 span { color: var(--gold-light); }
+.fin-list-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border-subtle); }
+.fin-list-row:last-child { border-bottom: 0; }
+.fin-list-row > :first-child { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+.fin-list-row small { display: block; color: var(--text-muted); margin-top: 5px; line-height: 1.5; }
+.fin-row-actions, .fin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+.fin-empty { color: var(--text-muted); padding: 18px 0 4px; }
+.fin-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 18px; margin-bottom: 20px; border: 1px solid var(--border-gold); border-radius: 12px; background: rgba(212,175,55,.06); }
+.fin-notice p { flex: 1 1 350px; line-height: 1.6; font-size: .85rem; }
+.fin-cancelled { opacity: .65; }
+.fin-breakdown { margin: 18px 0; }
+.fin-breakdown > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 8px 0; }
+.fin-breakdown dt { color: var(--text-muted); font-size: .85rem; }
+.fin-breakdown dd { font-weight: 700; }
+.fin-pending { border-top: 1px solid var(--border-subtle); margin-top: 6px; color: var(--gold-light); }
+.fin-profit-row td { color: var(--gold-light); font-weight: 700; }
+#fin-dialog { max-width: 560px; }
+#fin-action-error { line-height: 1.5; }
+#fin-compare-status { line-height: 1.6; }
+@media(max-width:1100px){.fin-cash-kpis{grid-template-columns:minmax(0,1fr);}}
+@media(max-width:650px){
+ #relatorio .rel-subtabs { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .fin-panel { padding: 16px; }
+ .fin-list-row > :first-child { flex-basis: 100%; }
+ .fin-row-actions, .fin-row-actions .btn, .fin-toolbar .btn { flex: 1 1 100%; }
+ .fin-cash-kpis { grid-template-columns:minmax(0,1fr); }
+}

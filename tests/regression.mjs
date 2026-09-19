@@ -12,7 +12,7 @@ const root=dirname(dirname(fileURLToPath(import.meta.url)));
 const tempRoot=join(root,'backend','.testdata');
 mkdirSync(tempRoot,{recursive:true});
 const dir=mkdtempSync(join(tempRoot,'regression-'));
-for(const f of ['server.js','database.js','rules.js','photos.js','schema.sql'])copyFileSync(join(root,'backend',f),join(dir,f));
+for(const f of ['server.js','database.js','rules.js','photos.js','finance.js','schema.sql'])copyFileSync(join(root,'backend',f),join(dir,f));
 const SQL=await initSqlJs();
 const seed=new SQL.Database();
 seed.run(readFileSync(join(dir,'schema.sql'),'utf8').replace(' ON DELETE CASCADE',''));
