@@ -122,15 +122,17 @@ function renderFinanceiro(geral) {
         </section>
         <p class="owner-note financeiro-note"><i class="fas fa-circle-info"></i> O total recebido inclui serviços e tinta. Confira o resultado após comissões e gastos no Resumo; os repasses por barbeiro estão na aba Equipe.</p>`;
 }
-async function loadGastos() {
+async function loadGastos(pagina=1) {
     const seq=++sequenciaGastos;
     try {
         const query=periodoUI(document.getElementById('gastos-inicio').value,document.getElementById('gastos-fim').value);
         const cat=document.getElementById('gastos-categoria').value;if(cat)query.set('categoria',cat);
-        const rows=await ownerJson('/gastos?'+query);
+        query.set('pagina',Number.isInteger(pagina)?pagina:1);
+        const dados=await ownerJson('/gastos?'+query),rows=dados.itens;
         if(seq!==sequenciaGastos || !relatorioToken())return;
         gastosUI=rows;
-        document.getElementById('gastos-resumo').innerHTML='<div class="kpi-card"><div class="kpi-title">Gastos filtrados</div><div class="kpi-value">'+moedaUI(rows.reduce((sum,g)=>sum+g.valor,0))+'</div><div>'+rows.length+' lançamentos</div></div>';
+        renderPagination('gastos-paginas',document.querySelector('#table-gastos').closest('.table-responsive'),dados,loadGastos);
+        document.getElementById('gastos-resumo').innerHTML='<div class="kpi-card"><div class="kpi-title">Gastos filtrados</div><div class="kpi-value">'+moedaUI(dados.valor)+'</div><div>'+dados.total+' lançamentos</div></div>';
         const tbody=document.querySelector('#table-gastos tbody');tbody.replaceChildren();
         if(!rows.length){tbody.innerHTML='<tr><td colspan="7">Nenhum gasto encontrado.</td></tr>';return;}
         for(const g of rows){

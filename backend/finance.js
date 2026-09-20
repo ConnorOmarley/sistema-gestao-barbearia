@@ -110,9 +110,18 @@ function commissions(query={}, barbeiro=null) {
   if(barbeiro){sql+=' AND a.barbeiro_id=?';f.args.push(barbeiro);}
   return all(sql+' ORDER BY a.data_hora,a.id',f.args).map(a=>({...a,pendente_centavos:Math.max(0,cents(a.valor_comissao)-a.pago_centavos)}));
 }
+function commissionTotals(query={}) {
+  const f=filter(query,'a.data_hora');
+  return all(`SELECT b.id,b.nome,SUM(COALESCE(p.pago,0)) pago_centavos,
+    SUM(MAX(0,ROUND(a.valor_comissao*100)-COALESCE(p.pago,0))) pendente_centavos
+    FROM atendimentos a JOIN barbeiros b ON b.id=a.barbeiro_id
+    LEFT JOIN (SELECT i.atendimento_id,SUM(i.valor_centavos) pago FROM fin_comissao_itens i
+      JOIN fin_movimentos m ON m.id=i.movimento_id WHERE m.estornado_em IS NULL GROUP BY i.atendimento_id) p ON p.atendimento_id=a.id
+    WHERE b.is_dono=0`+f.sql+' GROUP BY b.id',f.args);
+}
 export function commissionDetails(rows,query) {
-  const data=commissions(query);
-  return rows.map(r=>({...r,comissao_paga:brl(data.filter(a=>a.barbeiro_id===r.id).reduce((s,a)=>s+a.pago_centavos,0)),comissao_pendente:brl(data.filter(a=>a.barbeiro_id===r.id).reduce((s,a)=>s+a.pendente_centavos,0))}));
+  const data=new Map(commissionTotals(query).map(r=>[r.id,r]));
+  return rows.map(r=>({...r,comissao_paga:brl(data.get(r.id)?.pago_centavos),comissao_pendente:brl(data.get(r.id)?.pendente_centavos)}));
 }
 export function profit(query={}) {
   const a=filter(query,'a.data_hora'), g=filter(query,'data_hora');
@@ -126,8 +135,11 @@ export function profit(query={}) {
 function position() {
   const hoje=now();
   const saldo=total('SELECT SUM(valor_centavos) total FROM fin_movimentos WHERE estornado_em IS NULL AND data_hora<=?',[hoje]);
-  const cs=commissions({data_fim:hoje});
-  const contas=expenseDetails(all('SELECT * FROM gastos ORDER BY vencimento,id')).filter(g=>g.valor_pendente>0);
+  const cs=commissionTotals({data_fim:hoje});
+  const contas=all(`SELECT g.*,COALESCE(p.pago,0) pago_centavos,p.pago_em FROM gastos g LEFT JOIN
+    (SELECT referencia,-SUM(valor_centavos) pago,MAX(data_hora) pago_em FROM fin_movimentos WHERE tipo='gasto' AND estornado_em IS NULL GROUP BY referencia) p ON p.referencia=g.id
+    WHERE ROUND(g.valor*100)>COALESCE(p.pago,0) ORDER BY g.vencimento,g.id`)
+    .map(g=>({...g,valor_pago:brl(g.pago_centavos),valor_pendente:brl(Math.round(g.valor*100)-g.pago_centavos),situacao:g.pago_centavos>0?'parcial':'pendente'}));
   const cartoes=all(`SELECT c.*,a.valor_cobrado,a.valor_tinta,a.data_hora,b.nome FROM fin_cartoes c JOIN atendimentos a ON a.id=c.atendimento_id JOIN barbeiros b ON b.id=a.barbeiro_id
     WHERE NOT EXISTS (SELECT 1 FROM fin_movimentos m WHERE m.tipo='recebimento' AND m.referencia=a.id AND m.estornado_em IS NULL) ORDER BY COALESCE(c.previsto_em,a.data_hora),a.id`)
     .map(c=>({...c,bruto:brl(cents(c.valor_cobrado)+cents(c.valor_tinta)),taxa:brl(c.taxa_centavos),liquido:brl(cents(c.valor_cobrado)+cents(c.valor_tinta)-c.taxa_centavos)}));
@@ -135,7 +147,7 @@ function position() {
   const primeiro=one('SELECT MIN(data_hora) data FROM fin_movimentos WHERE tipo<>\'abertura\' AND estornado_em IS NULL')?.data;
   return {em:hoje,saldo:brl(saldo),comissoes_pendentes:brl(comissoes),contas_pendentes:brl(pendencias),saldo_livre:brl(saldo-comissoes-pendencias),cartao_a_receber:brl(cartoes.reduce((s,c)=>s+cents(c.liquido),0)),contas,cartoes,
     saldo_inicial_configurado:!!one("SELECT id FROM fin_movimentos WHERE tipo='abertura' AND estornado_em IS NULL"),primeiro_movimento:primeiro,
-    equipe:Object.values(cs.reduce((result,a)=>{const r=result[a.barbeiro_id]??={id:a.barbeiro_id,nome:a.nome,pendente_centavos:0};r.pendente_centavos+=a.pendente_centavos;return result;},{})).map(r=>({...r,pendente:brl(r.pendente_centavos)}))};
+    equipe:cs.map(r=>({...r,pendente:brl(r.pendente_centavos)}))};
 }
 // A retry with the same key returns the original response; a changed payload is rejected.
 function operation(req,fn) {
@@ -151,7 +163,10 @@ export function registerFinance(app, auth) {
   app.get('/api/financeiro/posicao',auth,(req,res)=>res.json(position()));
   app.get('/api/financeiro/extrato',auth,(req,res)=>{
     const f=filter(req.query,'data_hora');
-    res.json(all('SELECT * FROM fin_movimentos WHERE 1=1'+f.sql+' ORDER BY data_hora DESC,id DESC LIMIT 200',f.args).map(m=>({...m,valor:brl(m.valor_centavos)})));
+    if(req.query.pagina===undefined)return res.json(all('SELECT * FROM fin_movimentos WHERE 1=1'+f.sql+' ORDER BY data_hora DESC,id DESC LIMIT 200',f.args).map(m=>({...m,valor:brl(m.valor_centavos)})));
+    const page=Number(req.query.pagina);if(!Number.isSafeInteger(page)||page<1)invalid('Página inválida.');
+    const count=total('SELECT COUNT(*) total FROM fin_movimentos WHERE 1=1'+f.sql,f.args),pages=Math.max(1,Math.ceil(count/50)),current=Math.min(page,pages);
+    res.json({itens:all('SELECT * FROM fin_movimentos WHERE 1=1'+f.sql+' ORDER BY data_hora DESC,id DESC LIMIT 50 OFFSET ?',[...f.args,(current-1)*50]).map(m=>({...m,valor:brl(m.valor_centavos)})),pagina:current,paginas:pages,total:count});
   });
   app.get('/api/financeiro/comparar',auth,(req,res)=>{
     const atual=period(req.query), anterior=period({data_inicio:req.query.anterior_inicio,data_fim:req.query.anterior_fim});

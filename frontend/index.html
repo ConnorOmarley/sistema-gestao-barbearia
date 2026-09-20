@@ -3177,7 +3177,7 @@
             loadHistoricoDono();
         }
 
-        async function loadHistoricoDono() {
+        async function loadHistoricoDono(pagina = 1) {
             const tokenSolicitado = relatorioToken();
             if (!tokenSolicitado) return;
             if (!histDonoPeriodo) {
@@ -3186,20 +3186,33 @@
             }
             const requestAtual = ++histDonoRequest;
             const tbody = document.querySelector('#table-historico-dono tbody');
+            document.getElementById('historico-paginas')?.replaceChildren();
             atualizarStatusHistoricoDono('Atualizando atendimentos do período…', 'loading');
             if (tbody) tbody.innerHTML = htmlVazio(9, 'fa-spinner fa-spin', 'Carregando histórico…');
             try {
                 const query = new URLSearchParams();
                 if(histDonoInicio)query.set('data_inicio',histDonoInicio);
                 if(histDonoFim)query.set('data_fim',histDonoFim);
+                query.set('pagina',Number.isInteger(pagina)?pagina:1);
                 const url = API_URL+'/relatorio/atendimentos?'+query;
                 const res = await fetch(url, { headers: { 'X-Relatorio-Token': tokenSolicitado } });
                 if (requestAtual !== histDonoRequest || tokenSolicitado !== relatorioToken()) return;
                 if (res.status === 401) { removerTokenRelatorio(); abrirModalSenhaRelatorio(); return; }
                 if (!res.ok) throw new Error('Falha ao carregar histórico.');
-                const atendimentos = await res.json();
+                const paginaDados = await res.json();
+                const atendimentos = paginaDados.itens;
                 if (requestAtual !== histDonoRequest || tokenSolicitado !== relatorioToken()) return;
                 renderLinhasHistorico(atendimentos, tbody, 'Nenhum atendimento registrado no período.');
+                atualizarStatusHistoricoDono(paginaDados.total+' atendimentos no período • Total recebido: '+moedaUI(paginaDados.valor),'success');
+                let nav=document.getElementById('historico-paginas');
+                if(!nav){nav=document.createElement('div');nav.id='historico-paginas';nav.className='historico-pagination';tbody.closest('.table-responsive').after(nav);}
+                nav.replaceChildren();
+                const anterior=document.createElement('button'),proxima=document.createElement('button'),info=document.createElement('span');
+                anterior.textContent='Anterior';proxima.textContent='Próxima';info.textContent='Página '+paginaDados.pagina+' de '+paginaDados.paginas;
+                for(const b of [anterior,proxima]){b.type='button';b.className='btn btn-outline btn-small';}
+                anterior.disabled=paginaDados.pagina<=1;proxima.disabled=paginaDados.pagina>=paginaDados.paginas;
+                anterior.onclick=()=>loadHistoricoDono(paginaDados.pagina-1);proxima.onclick=()=>loadHistoricoDono(paginaDados.pagina+1);
+                nav.append(anterior,info,proxima);
             } catch (err) {
                 if (requestAtual !== histDonoRequest) return;
                 if (tbody) tbody.innerHTML = htmlVazio(9, 'fa-triangle-exclamation', 'Não foi possível carregar o histórico.');
@@ -3729,5 +3742,6 @@
     <script src="owner-ui.js"></script>
     <script src="finance-ui.js"></script>
     <script src="mobile.js"></script>
+<script src="backup-ui.js"></script>
 </body>
 </html>

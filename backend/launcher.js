@@ -1,6 +1,12 @@
 import { fork, spawn } from 'child_process';
 import { createServer } from 'net';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
+
+if(existsSync(fileURLToPath(new URL('./suporte-manutencao.json',import.meta.url)))) {
+  console.error('Manutencao pendente. Aguarde ou execute RECUPERAR_ATUALIZACAO.bat antes de abrir.');
+  process.exit(1);
+}
 
 const port=Number(process.env.PORT || 3000);
 const probe=createServer();

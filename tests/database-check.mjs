@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import initSqlJs from 'sql.js';
 import {readFileSync,renameSync,mkdirSync,rmdirSync,readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import db,{transaction,saveDatabase,backupDatabase,closeDatabase} from './database.js';
@@ -11,7 +12,10 @@ try {
  console.log('PASS integridade referencial ativa inclusive após exportação');
  const before=count();
  assert.throws(()=>transaction(()=>{insert();throw Error('falha simulada')}));assert.equal(count(),before);
- console.log('PASS rollback de operação interrompida');
+ transaction(()=>db.run("INSERT OR REPLACE INTO config VALUES ('rollback_teste','confirmado')"));
+ const rollbackSQL=await initSqlJs(),persisted=new rollbackSQL.Database(new Uint8Array(readFileSync(path)));
+ assert.equal(persisted.exec("SELECT valor FROM config WHERE chave='rollback_teste'")[0]?.values[0]?.[0],'confirmado');persisted.close();
+ console.log('PASS rollback e persistência de operação posterior');
  const bytes=readFileSync(path);
  renameSync(path,path+'.good');mkdirSync(path);
  try {assert.throws(()=>transaction(insert));assert.equal(count(),before);}
@@ -26,6 +30,6 @@ try {
  });
  console.log('PASS duplicidade rejeitada no banco e exclusão em cascata');
  for(let i=0;i<25;i++)backupDatabase();
- assert.equal(readdirSync(new URL('backups/',import.meta.url)).filter(f=>f.endsWith('.db')).length,20);
+ assert.equal(readdirSync(new URL('backups/',import.meta.url)).filter(f=>/^barbearia-\d{4}-\d{2}-\d{2}T/.test(f)).length,20);
  console.log('PASS retenção de 20 backups');
 }finally{closeDatabase()}

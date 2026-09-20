@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node ../tests/regression.mjs && node ../tests/finance.mjs"
+    "test": "node ../tests/regression.mjs && node ../tests/finance.mjs && node ../tests/resilience.mjs && node ../tests/suporte.cjs"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.3.1",

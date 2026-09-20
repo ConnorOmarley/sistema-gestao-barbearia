@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join, basename } from 'path';
 import { existsSync, readdirSync, mkdirSync } from 'fs';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
-import db, { backupDatabase, backupsDir, getConfig, setConfig, transaction, closeDatabase } from './database.js';
+import db, { backupDatabase, backupsDir, getConfig, setConfig, transaction, closeDatabase, backupStatus, configureExternalBackup } from './database.js';
 import { invalid, id, name, percent, money, roundMoney, flag, isPigmentacao, period, dayBounds } from './rules.js';
 import { registerPhotoRoutes } from './photos.js';
 import { registerFinance, guardAttendance, syncAttendance, removeAttendance, guardExpense, syncExpense, removeExpense, expenseDetails, commissionDetails, profit } from './finance.js';
@@ -54,12 +54,20 @@ function active(table, value) {
 function getItensAtendimento(value) {
   return getAll('SELECT i.*, s.nome AS servico_nome FROM atendimento_itens i JOIN servicos s ON s.id=i.servico_id WHERE i.atendimento_id=? ORDER BY i.id', [value]);
 }
-function listAtendimentos(filters, extra = '', extraParams = []) {
+function listAtendimentos(filters, extra = '', extraParams = [], page = null) {
   let sql = 'SELECT a.*,b.nome AS barbeiro_nome,b.is_dono AS barbeiro_is_dono,s.nome AS servico_nome FROM atendimentos a JOIN barbeiros b ON b.id=a.barbeiro_id JOIN servicos s ON s.id=a.servico_id WHERE 1=1' + extra;
   const params = [...extraParams];
   if (filters.data_inicio) { sql += ' AND a.data_hora >= ?'; params.push(filters.data_inicio); }
   if (filters.data_fim) { sql += ' AND a.data_hora <= ?'; params.push(filters.data_fim); }
-  return getAll(sql + ' ORDER BY a.data_hora DESC,a.id DESC', params).map(a => ({ ...a, itens: getItensAtendimento(a.id) }));
+  const rows=getAll(sql+' ORDER BY a.data_hora DESC,a.id DESC'+(page?' LIMIT ? OFFSET ?':''),page?[...params,page.limit,page.offset]:params);
+  if(!rows.length)return [];
+  const items=[];
+  for(let offset=0;offset<rows.length;offset+=400){
+    const chunk=rows.slice(offset,offset+400);
+    items.push(...getAll('SELECT i.*,s.nome AS servico_nome FROM atendimento_itens i JOIN servicos s ON s.id=i.servico_id WHERE i.atendimento_id IN ('+chunk.map(()=>'?').join(',')+') ORDER BY i.id',chunk.map(a=>a.id)));
+  }
+  const grouped=new Map();for(const item of items){if(!grouped.has(item.atendimento_id))grouped.set(item.atendimento_id,[]);grouped.get(item.atendimento_id).push(item);}
+  return rows.map(a=>({...a,itens:grouped.get(a.id)||[]}));
 }
 const tokensRelatorio = new Set();
 const pagamentos = new Set(['dinheiro', 'cartao', 'pix']);
@@ -224,7 +232,10 @@ function filtroSql(query, alias='') {
 app.get('/api/gastos',requerAcessoRelatorio,(req,res)=>{
   let {where,params}=filtroSql(req.query);
   if(req.query.categoria){if(!categoriasGastos.includes(req.query.categoria)) invalid('Categoria inválida.');where+=' AND categoria=?';params.push(req.query.categoria);}
-  res.json(expenseDetails(getAll('SELECT * FROM gastos WHERE 1=1'+where+' ORDER BY data_hora DESC,id DESC',params)));
+  if(req.query.pagina===undefined)return res.json(expenseDetails(getAll('SELECT * FROM gastos WHERE 1=1'+where+' ORDER BY data_hora DESC,id DESC',params)));
+  const page=Number(req.query.pagina);if(!Number.isSafeInteger(page)||page<1)invalid('Página inválida.');
+  const summary=getOne('SELECT COUNT(*) total,COALESCE(SUM(valor),0) valor FROM gastos WHERE 1=1'+where,params),pages=Math.max(1,Math.ceil(summary.total/50)),current=Math.min(page,pages);
+  res.json({itens:expenseDetails(getAll('SELECT * FROM gastos WHERE 1=1'+where+' ORDER BY data_hora DESC,id DESC LIMIT 50 OFFSET ?',[...params,(current-1)*50])),pagina:current,paginas:pages,total:summary.total,valor:roundMoney(summary.valor)});
 });
 app.post('/api/gastos',requerAcessoRelatorio,(req,res)=>{
   const g=camposGasto(req.body);
@@ -318,7 +329,15 @@ app.get('/api/relatorio/geral',requerAcessoRelatorio,(req,res)=>{
   const total_recebido=roundMoney(geral.total_geral+geral.total_tinta);
   res.json({...geral,...profit(req.query),total_recebido,total_gastos,saldo_operacional:roundMoney(total_recebido-total_gastos),gastos_por_categoria,pagamentos});
 });
-app.get('/api/relatorio/atendimentos',requerAcessoRelatorio,(req,res)=>res.json(listAtendimentos(period(req.query))));
+app.get('/api/relatorio/atendimentos',requerAcessoRelatorio,(req,res)=>{
+  if(req.query.pagina===undefined)return res.json(listAtendimentos(period(req.query)));
+  const page=Number(req.query.pagina);if(!Number.isSafeInteger(page)||page<1)invalid('Página inválida.');
+  const f=filtroSql(req.query),summary=getOne('SELECT COUNT(*) total,COALESCE(SUM(valor_cobrado+valor_tinta),0) valor FROM atendimentos WHERE 1=1'+f.where,f.params);
+  const pages=Math.max(1,Math.ceil(summary.total/50)),current=Math.min(page,pages);
+  res.json({itens:listAtendimentos(period(req.query),'',[],{limit:50,offset:(current-1)*50}),pagina:current,paginas:pages,total:summary.total,valor:roundMoney(summary.valor)});
+});
+app.get('/api/backup/status',requerAcessoRelatorio,(req,res)=>res.json(backupStatus()));
+app.put('/api/backup/configuracao',requerAcessoRelatorio,(req,res)=>res.json(configureExternalBackup(req.body.pasta)));
 app.post('/api/backup',requerAcessoRelatorio,(req,res)=>res.json({success:true,arquivo:basename(backupDatabase())}));
 app.get('/api/backup',requerAcessoRelatorio,(req,res)=>{
   const {arquivo}=req.query;

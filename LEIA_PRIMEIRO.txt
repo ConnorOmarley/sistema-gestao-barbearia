@@ -1,0 +1,26 @@
+ATUALIZACAO ASSISTIDA DA BARBEARIA
+
+1. Feche o sistema pressionando ENTER na janela do iniciador.
+2. Extraia este ZIP inteiro em uma pasta, por exemplo na Area de Trabalho.
+3. Abra ATUALIZAR_SISTEMA.bat com dois cliques.
+4. Escolha a pasta onde o sistema atual esta instalado: aquela que contem
+   iniciar_sistema.bat. Nao escolha a pasta deste ZIP.
+5. Confira o caminho, confirme e espere a mensagem de conclusao.
+6. Abra o sistema normalmente e pressione Ctrl+F5 no navegador.
+
+NAO e preciso copiar pastas por cima. O atualizador faz isso, guarda a
+versao anterior e preserva atendimentos, gastos, senha e fotos.
+
+Se aparecer uma mensagem de erro, envie uma foto dela ao suporte.
+Se houve queda de energia ou interrupcao, mantenha o sistema fechado
+e abra RECUPERAR_ATUALIZACAO.bat nesta pasta. Escolha a pasta do sistema
+quando solicitado. Essa opcao recupera a manutencao que ficou pendente.
+
+Depois desta atualizacao, a pasta do sistema tambem tera:
+- RESTAURAR_BACKUP.bat: usar com orientacao do suporte para voltar a uma
+  copia anterior dos dados. Os registros posteriores a copia deixam de
+  aparecer. O banco atual e guardado antes da troca.
+- RECUPERAR_ATUALIZACAO.bat: recuperar uma manutencao interrompida.
+
+Ao terminar, confira os registros e saldos com o responsavel da barbearia.
+Em Relatorios Financeiros > Backups, configure uma copia em outro local.

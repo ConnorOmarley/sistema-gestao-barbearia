@@ -11,3 +11,7 @@ frontend/assets/perfil/
 *.zip
 ENTREGA/
 backend/.testdata/
+
+# Recuperacao e manutencao local
+suporte/backups/
+backend/suporte-manutencao.json

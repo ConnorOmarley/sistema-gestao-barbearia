@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import {readFileSync,statSync,mkdtempSync,mkdirSync,readdirSync,renameSync} from 'node:fs';
+import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import db,{transaction,saveDatabase,backupDatabase,backupsDir,closeDatabase,calendarBackups,configureExternalBackup,backupStatus} from './database.js';
+const base=fileURLToPath(new URL('.',import.meta.url)),file=join(base,'barbearia.db');
+try{
+ const timestamp=statSync(file).mtimeMs;
+ await new Promise(resolve=>setTimeout(resolve,6100));
+ saveDatabase();assert.equal(statSync(file).mtimeMs,timestamp);
+ console.log('PASS banco ocioso e salvamento sem alterações não regravam o arquivo');
+ transaction(()=>db.run("INSERT OR REPLACE INTO config VALUES ('resilience','persistido')"));
+ const bytes=readFileSync(file);
+ const calendar=join(base,'calendar-test');mkdirSync(calendar);
+ for(let m=0;m<15;m++)calendarBackups(calendar,bytes,new Date(2024,m,1));
+ for(let d=1;d<=40;d++)calendarBackups(calendar,bytes,new Date(2026,0,d));
+ const files=readdirSync(calendar);
+ assert.equal(files.filter(f=>f.includes('-diario-')).length,30);assert.equal(files.filter(f=>f.includes('-mensal-')).length,12);
+ for(const name of files)assert.deepEqual(readFileSync(join(calendar,name)),bytes);
+ console.log('PASS retenção de 30 dias e 12 meses mantém cópias íntegras');
+ const destination=mkdtempSync(join(base,'..','external-test-'));
+ const configured=configureExternalBackup(destination);assert.equal(configured.erro_externo,null);assert(configured.ultimo_externo);
+ const subdir=join(destination,readdirSync(destination)[0]);assert.equal(readdirSync(subdir).length,2);
+ renameSync(destination,destination+'-offline');
+ backupDatabase();assert(backupStatus().erro_externo);assert.equal(backupStatus().erro_local,null);
+ transaction(()=>db.run("INSERT OR REPLACE INTO config VALUES ('resilience','sem-destino')"));
+ renameSync(destination+'-offline',destination);backupDatabase();assert.equal(backupStatus().erro_externo,null);
+ for(const name of readdirSync(subdir))assert.deepEqual(readFileSync(join(subdir,name)),readFileSync(file));
+ configureExternalBackup('');assert.equal(backupStatus().pasta_externa,'');
+ assert.throws(()=>configureExternalBackup(backupsDir));assert.throws(()=>configureExternalBackup('relative/path'));
+ console.log('PASS cópia externa isolada, desconexão, gravação local, reconexão e validação de destino');
+ const backup=backupDatabase();assert.deepEqual(readFileSync(backup),readFileSync(file));
+ assert.equal(db.exec('PRAGMA quick_check')[0].values[0][0],'ok');
+ console.log('PASS backup corresponde ao banco confirmado e passa na integridade');
+}finally{closeDatabase()}
