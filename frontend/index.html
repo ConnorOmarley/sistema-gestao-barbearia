@@ -1320,6 +1320,112 @@
 
         .item-add-btn {
             white-space: nowrap;
+            width: 120px;
+            flex: none;
+            height: 48px;
+            padding: 0 12px;
+            background: #f1f5f9;
+            color: #0f172a;
+            border-radius: 12px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: none;
+            transition: var(--transition);
+        }
+
+        .item-add-btn:hover {
+            background: linear-gradient(135deg, #d4af37 0%, #f5c542 100%);
+            color: #0c0e12;
+        }
+
+        .pay-segmented {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .pay-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 10px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-input);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pay-btn i {
+            font-size: 1rem;
+        }
+
+        .pay-btn:hover {
+            border-color: var(--border-gold);
+            color: var(--text-main);
+        }
+
+        .pay-btn.active {
+            border-color: var(--border-gold);
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold-light);
+        }
+
+        .service-picker {
+            position: relative;
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .service-picker > i:first-child {
+            position: absolute;
+            left: 14px;
+            color: var(--gold-primary);
+            font-size: 0.95rem;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .service-picker > i:last-child {
+            position: absolute;
+            right: 14px;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        .service-picker select {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 100%;
+            min-height: 48px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            padding: 13px 40px 13px 42px;
+            border-radius: var(--radius-sm);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .service-picker select:hover {
+            border-color: var(--border-gold);
+        }
+
+        .service-picker select:focus {
+            outline: none;
+            border-color: var(--border-gold-bright);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.12);
         }
 
         .itens-atendimento {
@@ -1332,17 +1438,89 @@
         .atendimento-item-row {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             background: rgba(15, 23, 42, 0.55);
             border: 1px solid var(--border-subtle);
-            border-left: 3px solid var(--gold-primary);
             border-radius: var(--radius-sm);
-            padding: 8px 10px;
+            padding: 8px 12px;
+            transition: var(--transition);
+        }
+
+        .atendimento-item-row:hover {
+            border-color: var(--border-gold);
+        }
+
+        .item-ico {
+            flex: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
         }
 
         .atendimento-item-row .item-nome-exibido {
-            color: #fff;
+            flex: 1;
+            min-width: 0;
+            border: none;
+            background: transparent;
+            padding: 6px;
             font-weight: 600;
+            color: #fff;
+        }
+
+        .atendimento-item-row .item-nome-exibido:focus {
+            outline: none;
+            box-shadow: none;
+            border-bottom: 1px solid var(--border-gold);
+        }
+
+        .item-valor-wrap {
+            position: relative;
+            flex: 0 0 120px;
+        }
+
+        .item-valor-wrap i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold-primary);
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        .item-valor-exibido {
+            width: 100%;
+            background: var(--bg-card-secondary);
+            border: 1px solid var(--border-subtle);
+            color: var(--emerald);
+            font-weight: 700;
+            padding: 8px 10px 8px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .item-remove-btn {
+            flex: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .item-remove-btn:hover {
+            color: #fb7185;
+            background: rgba(251, 113, 133, 0.12);
         }
 
 
@@ -1846,9 +2024,20 @@
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="atend-pagamento">Método de pagamento:</label>
-                                <select id="atend-pagamento" required>
-                                    <option value="dinheiro">Dinheiro</option>
+                                <label>Método de pagamento:</label>
+                                <div class="pay-segmented" role="group" aria-label="Método de pagamento">
+                                    <button type="button" class="pay-btn active" data-metodo="dinheiro" onclick="setMetodoPagamento('dinheiro')" aria-pressed="true">
+                                        <i class="fas fa-money-bill-wave"></i> Dinheiro
+                                    </button>
+                                    <button type="button" class="pay-btn" data-metodo="cartao" onclick="setMetodoPagamento('cartao')" aria-pressed="false">
+                                        <i class="fas fa-credit-card"></i> Cartão
+                                    </button>
+                                    <button type="button" class="pay-btn" data-metodo="pix" onclick="setMetodoPagamento('pix')" aria-pressed="false">
+                                        <i class="fas fa-qrcode"></i> Pix
+                                    </button>
+                                </div>
+                                <select id="atend-pagamento" required hidden>
+                                    <option value="dinheiro" selected>Dinheiro</option>
                                     <option value="cartao">Cartão</option>
                                     <option value="pix">Pix</option>
                                 </select>
@@ -1857,11 +2046,12 @@
                             <div class="form-group">
                                 <label>Serviços Realizados:</label>
                                 <div class="item-add-row">
-                                    <div class="input-icon-wrapper" style="flex: 1;">
-                                        <i class="fas fa-cut"></i>
+                                    <div class="service-picker">
+                                        <i class="fas fa-scissors" aria-hidden="true"></i>
                                         <select id="atend-servico"></select>
+                                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
                                     </div>
-                                    <button type="button" class="btn btn-outline item-add-btn" onclick="adicionarServicoItem()">
+                                    <button type="button" class="btn item-add-btn" onclick="adicionarServicoItem()">
                                         <i class="fas fa-plus"></i> Adicionar
                                     </button>
                                 </div>
@@ -2949,6 +3139,15 @@
             updateLivePreview();
         }
 
+        function setMetodoPagamento(metodo) {
+            document.getElementById('atend-pagamento').value = metodo;
+            document.querySelectorAll('.pay-btn').forEach(btn => {
+                const ativo = btn.dataset.metodo === metodo;
+                btn.classList.toggle('active', ativo);
+                btn.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+            });
+        }
+
         function renderItensAtendimento() {
             const container = document.getElementById('lista-itens-atendimento');
             if (itensAtendimento.length === 0) {
@@ -2957,16 +3156,14 @@
             }
             container.innerHTML = itensAtendimento.map((item, idx) => `
                 <div class="atendimento-item-row">
-                    <div class="input-icon-wrapper" style="flex: 1;">
-                        <i class="fas fa-cut"></i>
-                        <input type="text" class="item-nome-exibido" value="${escapeHtml(item.nome)}" readonly>
-                    </div>
-                    <div class="input-icon-wrapper" style="flex: 0 0 150px;">
+                    <span class="item-ico"><i class="fas fa-scissors"></i></span>
+                    <input type="text" class="item-nome-exibido" value="${escapeHtml(item.nome)}" readonly>
+                    <div class="item-valor-wrap">
                         <i class="fas fa-dollar-sign"></i>
                         <input type="number" class="item-valor-exibido" step="0.01" min="0" value="${item.valor.toFixed(2)}" data-idx="${idx}">
                     </div>
-                    <button type="button" class="btn btn-danger btn-small" onclick="removerServicoItem(${idx})" title="Remover serviço">
-                        <i class="fas fa-times"></i>
+                    <button type="button" class="item-remove-btn" onclick="removerServicoItem(${idx})" title="Remover serviço">
+                        <i class="fas fa-xmark"></i>
                     </button>
                 </div>
             `).join('');
@@ -3542,6 +3739,7 @@
                     itensAtendimento = [];
                     renderItensAtendimento();
                     e.target.reset();
+                    setMetodoPagamento('dinheiro');
                     document.getElementById('div-valor-tinta').style.display = 'none';
                     updateLivePreview();
                 } else {

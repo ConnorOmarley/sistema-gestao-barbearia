@@ -42,11 +42,12 @@
  .filters-bar .btn { flex: 1 1 100%; width: 100%; }
  .period-chips { gap: 8px; }
  .period-chips .chip-btn { flex: 1 1 auto; padding: 10px 12px; }
- .item-add-row { flex-direction: column; }
- .item-add-row .btn { width: 100%; }
- .atendimento-item-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; padding: 10px; }
- .atendimento-item-row > :first-child { grid-column: 1 / -1; }
- .atendimento-item-row .btn { padding: 10px; }
+.item-add-row { flex-direction: column; }
+  .item-add-row .btn { width: 100%; }
+  .pay-segmented { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .pay-btn { padding: 11px 6px; font-size: .8rem; flex-direction: column; gap: 4px; }
+  .atendimento-item-row { flex-wrap: wrap; padding: 10px; }
+  .item-valor-wrap { flex: 0 0 110px; }
  .switch-container { gap: 12px; padding: 14px; }
  .switch-label-group { min-width: 0; }
  .toggle-switch { flex-shrink: 0; }
