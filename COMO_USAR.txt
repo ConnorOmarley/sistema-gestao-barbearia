@@ -49,6 +49,21 @@ Compra de tinta é um gasto separado (categoria tinta). Nunca desconte a
 compra da comissão do atendimento. O valor de tinta cobrado do cliente é
 receita.
 
+COMO COBRAR SERVIÇOS QUE USAM PRODUTO (LUZES, REFLEXO, NEVOU, PIGMENTAÇÃO)
+Escolha UMA forma de lançar para cada serviço e siga ela sempre:
+- Produto incluso no preço: o valor total (mão de obra + produto) vai no
+  campo Valor do serviço e o campo Valor da Tinta fica vazio. O colaborador
+  recebe a comissão sobre o valor total cobrado.
+- Produto cobrado à parte: o valor da mão de obra vai no campo Valor do
+  serviço e o valor do produto vai no campo Valor da Tinta. O colaborador
+  recebe a comissão somente sobre a mão de obra; o valor do produto é 100%
+  da barbearia.
+Regra que define a comissão: ela é sempre calculada sobre o campo Valor do
+serviço. Se o produto ficar dentro do valor do serviço, o colaborador ganha
+comissão também sobre o produto; se ficar no campo Valor da Tinta, o produto
+não gera comissão. Não misture as duas formas no mesmo serviço: mudar de uma
+para outra muda o valor do barbeiro no fechamento e gera dúvida.
+
 6. EDITAR E EXCLUIR ATENDIMENTOS
 Entre na Área do Dono > Histórico do Dono.
 Use Hoje, Semana, Mês, datas personalizadas ou Todo o período.
@@ -177,3 +192,61 @@ Eles verificam regras de comissão, pagamentos, gastos, caixa, estornos,
 filtros, edição, backup anterior, permissões, migração, reinício e
 integridade do banco.
 Para testar visualmente, use uma cópia do sistema e dados fictícios.
+
+13. COMO USAR DO JEITO CERTO — RITMO RECOMENDADO
+
+CONFIGURAÇÃO (uma única vez)
+1. Inicie o sistema e entre na Área do Dono para definir a senha.
+2. Informe o Saldo inicial na sub-aba Financeiro: o dinheiro que já
+   existia ANTES do primeiro lançamento do sistema (pode ser zero).
+3. Em Barbeiros, cadastre cada profissional com o percentual dele.
+4. Em Serviços, cadastre os serviços com preço. Para pigmentação, deixe
+   comissão 0% e marque Apenas para o Dono se só ele executa. Para serviços
+   com produto (luzes, reflexo, nevou), defina a comissão fixa e escolha
+   UMA forma de cobrar o produto (ver seção 5).
+5. Se possível, configure o backup externo em pasta fora do pen drive
+   (Relatórios Financeiros > Backups).
+
+ROTINA DIÁRIA
+1. Inicie o sistema (iniciar_sistema.bat).
+2. Em Caixa & Atendimento, registre cada atendimento: barbeiro, serviço(s)
+   e pagamento. As comissões são calculadas sozinhas.
+3. Use o campo Valor da Tinta somente quando o produto for cobrado à parte,
+   sempre seguindo a regra definida para aquele serviço.
+4. Venda em cartão não entra no caixa na hora: depois informe a taxa e a
+   previsão e registre o recebimento na sub-aba Financeiro (ver seção 8).
+5. No fim do expediente, compare o caixa físico com o Saldo do sistema.
+
+FECHAMENTO SEMANAL (Área do Dono)
+1. Relatórios > Equipe: confira as comissões de cada barbeiro no período.
+2. Pague as comissões em Equipe ou Financeiro (Registrar pagamento).
+   Comissão NUNCA é lançada como gasto (ver seção 7).
+3. Registre as despesas da semana em Gastos (tinta comprada, giletes,
+   material, aluguel etc.).
+4. Em Financeiro, confira os "Cartões a receber" e registre recebimentos.
+5. Em Resumo, consulte o lucro do período.
+
+FECHAMENTO MENSAL
+1. Use Comparar para ver o mês atual contra o anterior (seção 9).
+2. Faça a Retirada do dono em Financeiro (não reduz o lucro).
+3. Após encerrar o sistema, copie a pasta inteira para outro dispositivo.
+
+14. BOAS PRÁTICAS QUE EVITAM ERROS
+- Cada serviço tem UMA forma padrão de lançar (produto incluso no preço ou
+  cobrado à parte no campo Tinta). Não altere a forma no meio do mês: muda
+  a comissão do barbeiro e gera dúvida (ver seção 5).
+- Prefira ajustar o preço em Serviços a editar o valor na tela do caixa;
+  com o valor padrão do catálogo, o lançamento é rápido e sempre igual.
+- A tinta cobrada do cliente é receita da barbearia; a compra de tinta é
+  gasto (categoria tinta). Nunca desconte a compra da comissão de ninguém.
+- Nunca registre comissão como gasto: pague na sub-aba Equipe/Financeiro.
+- Nunca registre a taxa de cartão duas vezes: ela entra no recebimento e no
+  lucro uma única vez (seção 8).
+- Despesa reduz o caixa E o lucro; retirada do dono reduz só o caixa.
+- Confira o caixa físico contra o saldo do sistema todos os dias.
+- Não deixe a sessão da Área do Dono aberta em computador compartilhado.
+- Backup no mesmo pen drive não protege contra perda física: copie para
+  outro dispositivo após encerrar (seção 10).
+- Use a observação (ex: nome do cliente) para identificar atendimentos.
+- Para testes use uma cópia do sistema; só zere (resetar_sistema.bat) antes
+  de iniciar o uso real (seção 11).

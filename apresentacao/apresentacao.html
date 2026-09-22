@@ -670,7 +670,94 @@ ul.clean li strong { color: var(--text-main); }
     </div>
   </section>
 
-  <!-- ============ 12. DEMO GUIADA ============ -->
+  <!-- ============ 12. AS TELAS DO SISTEMA ============ -->
+  <section class="slide" data-note="
+    <p>Mostre as <b>três telas principais</b> e o fluxo completo em um minuto.</p>
+    <p><b>1. Caixa &amp; Atendimento:</b> é a tela que a equipe usa o dia inteiro. Mencione: escolhe o profissional, adiciona os serviços, marca se teve pigmentação/tinta — e o resumo abre na hora com a parte do barbeiro e a parte da barbearia.</p>
+    <p><b>2. Relatórios · Equipe:</b> abrindo pela Área do Dono (senha). Aqui vêm as comissões por barbeiro e período: atendimentos, faturado, comissão calculada e o que sobra para a casa. &lsquo;É aqui que vocês vão parar de somar na calculadora.&rsquo;</p>
+    <p><b>3. Financeiro:</b> a visão do dono: faturamento, comissões, despesas, lucro, cartões a receber e extrato para desfazer erro. &lsquo;O dono passa a saber o resultado de verdade.&rsquo;</p>
+    <p class='tip'>Use as abas laterais (mock do navegador acima) como roteiro: Caixa, Histórico, Barbeiros, Serviços e Relatórios (trancado).</p>">
+    <div class="eyebrow">Conheça as telas</div>
+    <h2 class="title">Tudo em um sistema, <span class="hl-gold">tudo em um só dia</span></h2>
+
+    <div class="mock" style="margin-top:20px;">
+      <div class="mock-head">
+        <span class="dot" style="background:#fb7185;"></span>
+        <span class="dot" style="background:#f5e7b2;"></span>
+        <span class="dot" style="background:#10b981;"></span>
+        <span class="url">sistema-gestao-barbearia · abas do menu</span>
+      </div>
+      <div class="mock-body" style="padding:10px 20px;display:flex;flex-wrap:wrap;gap:10px;">
+        <span class="tag gold">💈 Caixa &amp; Atendimento</span>
+        <span class="tag dim">📜 Histórico</span>
+        <span class="tag dim">👥 Barbeiros</span>
+        <span class="tag dim">✂️ Serviços</span>
+        <span class="tag gold">🔒 Relatórios (do dono)</span>
+      </div>
+    </div>
+
+    <div class="grid g3" style="margin-top:16px;">
+      <div>
+        <div class="mock" style="margin-top:0;">
+          <div class="mock-head"><span class="url">💈 Caixa &amp; Atendimento</span></div>
+          <div class="mock-body">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;"><b style="color:var(--text-main);">Profissional:</b> Lucas <span class="tag dim">40%</span></div>
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;"><b style="color:var(--text-main);">Serviços:</b></div>
+            <div style="font-size:13px;display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg-card-2);border-radius:8px;margin-bottom:6px;"><span style="color:var(--text-main);">Corte + Barba</span><span>R$ 45,00</span></div>
+            <div style="font-size:13px;display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg-card-2);border-radius:8px;"><span style="color:var(--text-main);">Sobrancelha</span><span>R$ 15,00</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border);margin-top:4px;font-size:13px;">
+              <span style="color:var(--text-muted);">🏷️ Pigmentação / Tinta</span><span class="tag gold">ON</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border);font-size:13px;">
+              <span style="color:var(--emerald);">Parte Barbeiro</span><span style="color:var(--emerald);font-weight:800;">R$ 24,00</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:9px;font-size:13px;">
+              <span style="color:var(--gold-light);">Parte Barbearia</span><span style="color:var(--gold-light);font-weight:800;">R$ 36,00 + tinta</span>
+            </div>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.5;margin-top:10px;">A tela da equipe: registra o atendimento e <b style="color:var(--text-main);">já calcula as partes na hora</b>, com resumo antes de confirmar.</p>
+      </div>
+
+      <div>
+        <div class="mock" style="margin-top:0;">
+          <div class="mock-head"><span class="url">📊 Relatórios · Equipe 🔒</span></div>
+          <div class="mock-body">
+            <table class="tbl" style="font-size:12px;">
+              <thead><tr><th>Barbeiro</th><th>Atend.</th><th>Comissão</th><th>p/ casa</th></tr></thead>
+              <tbody>
+                <tr><td><b>Michael</b> <span class="tag gold">dono</span></td><td>40</td><td>—</td><td>R$ 1.800</td></tr>
+                <tr><td><b>Lucas</b> <span class="tag dim">40%</span></td><td>50</td><td style="color:var(--emerald);font-weight:700;">R$ 880</td><td>R$ 1.320</td></tr>
+                <tr><td><b>Jonas</b> <span class="tag dim">50%</span></td><td>38</td><td style="color:var(--emerald);font-weight:700;">R$ 800</td><td>R$ 800</td></tr>
+              </tbody>
+            </table>
+            <div class="small-note" style="margin-top:10px;">Pago ✓ / pendente ● ao lado de cada comissão.</div>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.5;margin-top:10px;">A tela do fechamento (senha do dono): <b style="color:var(--text-main);">comissão por barbeiro</b>, o que já foi pago e o que falta pagar.</p>
+      </div>
+
+      <div>
+        <div class="mock" style="margin-top:0;">
+          <div class="mock-head"><span class="url">⚖️ Financeiro · Área do Dono 🔒</span></div>
+          <div class="mock-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+              <div style="background:var(--bg-card-2);border-radius:8px;padding:8px 10px;"><div style="font-size:10px;color:var(--text-muted);">Faturamento</div><div style="font-size:14px;font-weight:800;color:var(--gold-light);">R$ 7.500</div></div>
+              <div style="background:var(--bg-card-2);border-radius:8px;padding:8px 10px;"><div style="font-size:10px;color:var(--text-muted);">Comissões</div><div style="font-size:14px;font-weight:800;color:var(--emerald);">R$ 2.440</div></div>
+              <div style="background:var(--bg-card-2);border-radius:8px;padding:8px 10px;"><div style="font-size:10px;color:var(--text-muted);">Despesas</div><div style="font-size:14px;font-weight:800;color:var(--rose);">R$ 1.120</div></div>
+              <div style="background:var(--bg-card-2);border-radius:8px;padding:8px 10px;"><div style="font-size:10px;color:var(--text-muted);">Lucro</div><div style="font-size:14px;font-weight:800;">R$ 3.940</div></div>
+            </div>
+            <div style="font-size:12px;padding:8px 10px;background:var(--bg-card-2);border-radius:8px;">
+              <div style="color:var(--text-muted);">📜 Extrato · 💳 Cartões a receber · 🧾 Contas</div>
+            </div>
+          </div>
+        </div>
+        <p style="color:var(--text-muted);font-size:13px;line-height:1.5;margin-top:10px;">A visão do dono: <b style="color:var(--text-main);">lucro real do período</b>, contas, cartões a receber e extrato com opção de desfazer erro.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 13. DEMO GUIADA ============ -->
   <section class="slide" data-note="
     <p><b>Roteiro de demonstração ao vivo</b> (se houver computador e pen drive):</p>
     <p><b>1.</b> Abrir o sistema (duplo clique no <code>iniciar_sistema.bat</code>).</p>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; height: 1350px;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(900px 480px at 85% -5%, rgba(212,175,55,.16), transparent 60%),
+      radial-gradient(700px 420px at -10% 110%, rgba(16,185,129,.10), transparent 60%),
+      #0a0c10;
+    color: #f8fafc;
+    padding: 90px 80px;
+    overflow: hidden;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 18px;
+    text-transform: uppercase; letter-spacing: 4px;
+    font-size: 26px; color: #d4af37; font-weight: 700;
+  }
+  .eyebrow::before { content: ""; width: 56px; height: 3px; background: #d4af37; }
+  .logo { font-size: 110px; line-height: 1; margin: 36px 0 6px; }
+  h1 { font-size: 92px; line-height: 1.04; font-weight: 800; margin-top: 18px; }
+  h1 .gold { color: #f5e7b2; }
+  .sub { color: #94a3b8; font-size: 34px; line-height: 1.45; margin-top: 28px; max-width: 26em; }
+  .points { margin-top: 44px; }
+  .point { display: flex; gap: 22px; align-items: flex-start; padding: 22px 0; border-bottom: 2px dashed #232a3a; font-size: 33px; line-height: 1.4; color: #cbd5e1; }
+  .point:last-child { border-bottom: none; }
+  .point .tic { color: #10b981; font-weight: 800; font-size: 40px; line-height: 1; flex: none; }
+  .point b { color: #f8fafc; }
+  .split-demo {
+    margin-top: 48px;
+    background: linear-gradient(160deg, #171c28, #121620);
+    border: 2px solid rgba(212,175,55,.45);
+    border-radius: 28px; padding: 38px 44px;
+    display: flex; justify-content: space-between; align-items: center; gap: 30px;
+  }
+  .split-demo .col { flex: 1; }
+  .split-demo .lbl { color: #94a3b8; font-size: 27px; }
+  .split-demo .val { font-weight: 800; font-size: 44px; margin-top: 6px; }
+  .split-demo .val.green { color: #10b981; }
+  .split-demo .val.gold { color: #f5e7b2; }
+  .split-demo .col-mid { flex: none; color: #64748b; font-size: 40px; }
+  .cta {
+    margin-top: 56px;
+    border: 2px solid rgba(212,175,55,.55);
+    background: rgba(212,175,55,.08);
+    border-radius: 28px; padding: 34px 44px;
+    text-align: center;
+  }
+  .cta h2 { color: #f5e7b2; font-size: 44px; font-weight: 800; letter-spacing: .5px; }
+  .cta p { margin-top: 14px; color: #cbd5e1; font-size: 28px; }
+  .stamps { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; }
+  .stamp {
+    border: 2px solid rgba(212,175,55,.45); color: #f5e7b2;
+    border-radius: 999px; padding: 14px 28px; font-size: 26px; font-weight: 700;
+    background: rgba(212,175,55,.05);
+  }
+  .stamp.green { border-color: rgba(16,185,129,.5); color: #10b981; background: rgba(16,185,129,.05); }
+</style>
+</head>
+<body>
+  <div class="eyebrow">Sistema de Gestão para Barbearia</div>
+  <div class="logo">💈</div>
+  <h1>Comissão na hora,<br><span class="gold">sem discussão.</span></h1>
+  <div class="sub">Sistema de caixa feito para barbearia: registra o atendimento e calcula a comissão de cada barbeiro automaticamente.</div>
+
+  <div class="points">
+    <div class="point"><span class="tic">✓</span><span>Atendimento em <b>10 segundos</b> e comissão <b>calculada sozinha</b>, na hora.</span></div>
+    <div class="point"><span class="tic">✓</span><span>Relatório da semana <b>pronto em 2 segundos</b> — tinta e pigmentação inclusas.</span></div>
+    <div class="point"><span class="tic">✓</span><span><b>100% offline:</b> roda do pen drive, sem mensalidade, em qualquer PC Windows.</span></div>
+  </div>
+
+  <div class="split-demo">
+    <div class="col"><div class="lbl">Corte + Barba · R$ 45</div><div class="val green">Parte barbeiro · R$ 18</div></div>
+    <div class="col-mid">+</div>
+    <div class="col"><div class="lbl">comissão 40%</div><div class="val gold">Parte barbearia · R$ 27</div></div>
+  </div>
+
+  <div class="cta">
+    <h2>Quer ver o fechamento da sua semana pronto?</h2>
+    <p>Peça uma demonstração gratuita — mostramos com os dados da sua barbearia.</p>
+  </div>
+
+  <div class="stamps">
+    <span class="stamp">Sem mensalidade</span>
+    <span class="stamp green">Sem internet</span>
+    <span class="stamp">Roda do pen drive</span>
+  </div>
+</body>
+</html>
