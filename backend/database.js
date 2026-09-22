@@ -1,3 +1,10 @@
+/*
+ * Sistema de Gestão para Barbearia
+ * Autor: Carlos Alberto
+ * Contato: alberttcarlosu.u@gmail.com
+ * Licença: MIT
+ * Criado em: 2026
+ */
 import initSqlJs from 'sql.js';
 import { fileURLToPath } from 'url';
 import { dirname, join, resolve, isAbsolute, relative } from 'path';

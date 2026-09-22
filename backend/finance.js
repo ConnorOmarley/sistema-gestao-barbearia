@@ -1,3 +1,10 @@
+/*
+ * Sistema de Gestão para Barbearia
+ * Autor: Carlos Alberto
+ * Contato: alberttcarlosu.u@gmail.com
+ * Licença: MIT
+ * Criado em: 2026
+ */
 import db, { transaction, backupDatabase, getConfig } from './database.js';
 import { invalid, id, name, money, period } from './rules.js';
 import { randomUUID, createHash } from 'node:crypto';

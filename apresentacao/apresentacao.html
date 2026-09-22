@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Gestão para Barbearia — Apresentação</title>
+<style>
+:root {
+  --bg-body: #0a0c10;
+  --bg-card: #121620;
+  --bg-card-2: #171c28;
+  --gold-primary: #d4af37;
+  --gold-light: #f5e7b2;
+  --gold-dark: #997a15;
+  --gold-glow: 0 0 25px rgba(212, 175, 55, 0.25);
+  --emerald: #10b981;
+  --amber: #f59e0b;
+  --rose: #fb7185;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --border: #232a3a;
+  --border-gold: rgba(212, 175, 55, 0.4);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg-body);
+  color: var(--text-main);
+  overflow: hidden;
+}
+.deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 7vh 8vw;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(40px);
+  transition: opacity .45s ease, transform .45s ease;
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgba(212,175,55,.08), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(16,185,129,.06), transparent 60%),
+    var(--bg-body);
+}
+.slide.active { opacity: 1; pointer-events: auto; transform: none; }
+.slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+}
+
+/* Navigation */
+.progress { position: fixed; top: 0; left: 0; height: 4px; background: linear-gradient(90deg, var(--gold-primary), var(--gold-light)); width: 0%; transition: width .3s ease; z-index: 60; }
+.controls {
+  position: fixed; bottom: 22px; right: 30px; display: flex; gap: 10px; z-index: 50;
+}
+.controls button {
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 1px solid var(--border-gold);
+  background: var(--bg-card);
+  color: var(--gold-light);
+  font-size: 18px; cursor: pointer;
+  transition: all .2s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.controls button:hover { background: rgba(212,175,55,.15); transform: scale(1.06); }
+.controls button:disabled { opacity: .25; cursor: default; transform: none; }
+.slide-counter {
+  position: fixed; bottom: 34px; left: 30px;
+  color: var(--text-dim); font-size: 13px; letter-spacing: 1.5px; z-index: 50;
+}
+.hint {
+  position: fixed; bottom: 34px; left: 50%; transform: translateX(-50%);
+  color: var(--text-dim); font-size: 12px; z-index: 50;
+  background: var(--bg-card); border: 1px solid var(--border);
+  padding: 6px 14px; border-radius: 999px; white-space: nowrap;
+}
+
+/* Typography & chips */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  text-transform: uppercase; letter-spacing: 3px;
+  font-size: 12px; color: var(--gold-primary);
+  margin-bottom: 16px; font-weight: 700;
+}
+.eyebrow::before { content: ""; width: 26px; height: 2px; background: var(--gold-primary); }
+h1.title { font-size: clamp(34px, 5.2vw, 64px); line-height: 1.05; font-weight: 800; }
+h2.title { font-size: clamp(26px, 3.8vw, 46px); line-height: 1.12; font-weight: 800; margin-bottom: 18px; }
+.subtitle { color: var(--text-muted); font-size: clamp(15px, 1.6vw, 20px); max-width: 70ch; line-height: 1.55; }
+.hl-gold { color: var(--gold-light); }
+.hl-green { color: var(--emerald); }
+.hl-rose { color: var(--rose); }
+.badge {
+  display: inline-block; padding: 4px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; letter-spacing: .5px;
+  border: 1px solid var(--border); background: var(--bg-card);
+  margin: 2px 4px; color: var(--text-muted);
+}
+
+/* Cards / grids */
+.grid { display: grid; gap: 18px; margin-top: 26px; }
+.g2 { grid-template-columns: repeat(2, 1fr); }
+.g3 { grid-template-columns: repeat(3, 1fr); }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 22px; position: relative;
+  transition: transform .2s ease, border-color .2s ease;
+}
+.card:hover { transform: translateY(-3px); border-color: var(--border-gold); }
+.card .ic { font-size: 28px; margin-bottom: 12px; display: block; }
+.card h3 { font-size: 17px; margin-bottom: 8px; }
+.card p, .card li { color: var(--text-muted); font-size: 14px; line-height: 1.55; }
+.card.gold { border-color: var(--border-gold); background: linear-gradient(160deg, rgba(212,175,55,.08), var(--bg-card) 55%); }
+.card.gold h3 { color: var(--gold-light); }
+.card.green { border-color: rgba(16,185,129,.35); background: linear-gradient(160deg, rgba(16,185,129,.08), var(--bg-card) 55%); }
+.card.green h3 { color: var(--emerald); }
+
+/* Lists */
+ul.clean { list-style: none; margin-top: 18px; max-width: 78ch; }
+ul.clean li { display: flex; gap: 14px; align-items: flex-start; padding: 10px 0; color: var(--text-muted); font-size: 16px; line-height: 1.5; border-bottom: 1px dashed var(--border); }
+ul.clean li:last-child { border-bottom: none; }
+ul.clean li .tic { color: var(--gold-primary); font-weight: 800; flex: none; }
+ul.clean li strong { color: var(--text-main); }
+
+/* Formula / money blocks */
+.formula {
+  background: var(--bg-card); border: 1px solid var(--border-gold);
+  border-radius: 16px; padding: 26px 28px; margin-top: 24px;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: clamp(14px, 1.5vw, 19px); color: var(--gold-light);
+  line-height: 2.1; max-width: 95ch;
+}
+.formula .dim { color: var(--text-dim); }
+.formula .em { color: var(--emerald); font-weight: 700; }
+
+.split { display: grid; grid-template-columns: 1.2fr .8fr; gap: 26px; margin-top: 24px; }
+.big-number { font-size: clamp(30px, 4vw, 52px); font-weight: 800; color: var(--gold-light); }
+.small-note { color: var(--text-dim); font-size: 12.5px; }
+
+/* Comparison bars */
+.bars { margin-top: 24px; max-width: 80ch; }
+.bar-row { margin-bottom: 16px; }
+.bar-row .lbl { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+.bar-row .lbl b { color: var(--text-main); }
+.bar-track { height: 22px; background: var(--bg-input, #0e1118); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.bar-fill { height: 100%; border-radius: 8px; transition: width 1s ease; }
+.bar-owner { background: linear-gradient(90deg, var(--gold-dark), var(--gold-primary)); }
+.bar-team { background: linear-gradient(90deg, #0d8a63, var(--emerald)); }
+.bar-shop { background: linear-gradient(90deg, #7c5b0a, var(--gold-light)); }
+
+/* Pillars */
+.pillar { text-align: center; }
+.pillar .num { font-size: clamp(28px, 3.4vw, 44px); font-weight: 800; color: var(--gold-light); }
+.pillar p { color: var(--text-muted); font-size: 14px; margin-top: 6px; line-height: 1.5; }
+
+/* Screen mock */
+.mock {
+  background: var(--bg-card); border: 1px solid var(--border-gold);
+  border-radius: 16px; margin-top: 26px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+.mock .mock-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; background: var(--bg-card-2); border-bottom: 1px solid var(--border);
+}
+.mock .mock-head .dot { width: 11px; height: 11px; border-radius: 50%; }
+.mock .mock-head .url { color: var(--text-dim); font-size: 12px; margin-left: 8px; }
+.mock .mock-body { padding: 18px 20px; }
+
+/* Table */
+.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tbl th { text-align: left; color: var(--text-dim); text-transform: uppercase; font-size: 11px; letter-spacing: .8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.tbl td { padding: 9px 10px; border-bottom: 1px dashed var(--border); color: var(--text-muted); }
+.tbl td b { color: var(--text-main); }
+
+.tag {
+  display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700;
+}
+.tag.green { background: rgba(16,185,129,.14); color: var(--emerald); }
+.tag.gold { background: rgba(212,175,55,.14); color: var(--gold-light); }
+.tag.dim { background: rgba(100,116,139,.14); color: var(--text-dim); }
+
+/* Speaker notes */
+.notes-btn {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  z-index: 55; background: var(--bg-card); color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 8px 18px; font-size: 13px; cursor: pointer; transition: all .2s ease;
+  display: flex; align-items: center; gap: 8px;
+}
+.notes-btn:hover { border-color: var(--border-gold); color: var(--gold-light); }
+.notes-btn.on { background: rgba(212,175,55,.12); color: var(--gold-light); border-color: var(--border-gold); }
+.notes-panel {
+  position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%) translateY(20px);
+  width: min(760px, 92vw); max-height: 52vh; overflow-y: auto;
+  background: var(--bg-card-2); border: 1px solid var(--border-gold);
+  border-radius: 18px; padding: 24px 26px; z-index: 55;
+  opacity: 0; pointer-events: none; transition: all .25s ease;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6);
+}
+.notes-panel.show { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.notes-panel h4 { color: var(--gold-light); text-transform: uppercase; letter-spacing: 2px; font-size: 12px; margin-bottom: 12px; }
+.notes-panel p { color: var(--text-muted); font-size: 15px; line-height: 1.7; margin-bottom: 12px; }
+.notes-panel p b { color: var(--text-main); }
+.notes-panel p.tip { color: var(--amber); font-size: 13.5px; }
+.notes-panel p.tip b { color: var(--amber); }
+
+/* Cover special */
+.cover { text-align: center; align-items: center; }
+.cover .logo {
+  font-size: 64px; margin-bottom: 22px;
+  filter: drop-shadow(0 0 25px rgba(212,175,55,.35));
+}
+.cover h1 { font-size: clamp(38px, 6vw, 78px); }
+.cover .tagline { color: var(--gold-light); font-size: clamp(16px, 2vw, 22px); letter-spacing: 1px; margin-top: 14px; font-weight: 600; }
+.cover .meta { margin-top: 30px; color: var(--text-dim); font-size: 14px; }
+
+/* Stamps */
+.stamps { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+.stamp {
+  border: 1px solid var(--border-gold); color: var(--gold-light);
+  border-radius: 999px; padding: 10px 18px; font-size: 14px; font-weight: 700;
+  background: rgba(212,175,55,.06);
+}
+.stamp.green { border-color: rgba(16,185,129,.4); color: var(--emerald); background: rgba(16,185,129,.06); }
+
+@media (max-width: 900px) {
+  .g2, .g3, .g4 { grid-template-columns: 1fr; }
+  .split { grid-template-columns: 1fr; }
+  .slide { padding: 6vh 6vw; overflow-y: auto; }
+  .hint { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ============ 1. CAPA ============ -->
+  <section class="slide cover" data-note="
+    <p><b>Frase de abertura:</b> &ldquo;Quantos de vocês ainda fecham a comissão da semana no caderno, na calculadora ou na planilha que cada um edita do seu jeito?&rdquo; — Levantar a mão e dar um segundo para eles refletirem.</p>
+    <p>Apresente o sistema como a ferramenta que resolve exatamente essa dor: <b>a comissão calculada sozinha, na hora, sem deixar dúvida para ninguém.</b></p>
+    <p class='tip'>Dica: fale devagar no começo. Essa é a hora de criar conexão com o problema deles, não de vender recurso.</p>">
+    <div class="logo">💈</div>
+    <div class="eyebrow" style="justify-content:center;">Sistema de Gestão para Barbearia</div>
+    <h1 class="title">Comissão justa,<br>Cálculo <span class="hl-gold">automático</span>.</h1>
+    <div class="tagline">Adeus à planilha e à discussão no fim da semana</div>
+    <div class="stamps" style="justify-content:center;">
+      <span class="stamp">100% offline</span>
+      <span class="stamp">Roda do pen drive</span>
+      <span class="stamp">Sem mensalidade</span>
+      <span class="stamp green">Custo zero</span>
+    </div>
+    <div class="meta">Apresentação comercial · v1.0</div>
+  </section>
+
+  <!-- ============ 2. O PROBLEMA ============ -->
+  <section class="slide" data-note="
+    <p>Descreva o cenário típico: <b>o caixa anota em papel, no fim da semana alguém soma na calculadora, cada barbeiro faz a conta do seu jeito e ninguém confia no resultado.</b></p>
+    <p>Pergunte: &ldquo;Quantos de vocês já ouviram a frase <i>&lsquo;acho que contei errado&rsquo;</i> no fechamento?&rdquo;</p>
+    <p class='tip'>Use exemplos de números abertos: &ldquo;numa semana de R$ 5 mil com 4 barbeiros, um centavo mal somado vira briga.&rdquo;</p>">
+    <div class="eyebrow">O problema</div>
+    <h2 class="title">O fechamento de comissão <span class="hl-rose">manual</span> dá dor de cabeça</h2>
+    <div class="grid g2">
+      <div class="card">
+        <span class="ic">📝</span>
+        <h3>Caderno e papel</h3>
+        <p>Anotação a caneta, letra ilegível, receita esquecida. No fim do dia o caixa &ldquo;não bate&rdquo; e ninguém sabe o que faltou.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🧮</span>
+        <h3>Calculadora aberta a cada fechamento</h3>
+        <p>Somam-se 30, 40 atendimentos a mão, um de cada vez. Um número errado muda o repasse e estoura a confiança da equipe.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📊</span>
+        <h3>Planilha que cada um edita</h3>
+        <p>Todo mundo mexe na mesma planilha, no celular e no PC. Sem controle de quem alterou, o resultado &ldquo;sai diferente&rdquo;.</p>
+      </div>
+      <div class="card">
+        <span class="ic">💸</span>
+        <h3>Sem olho na tinta e na pigmentação</h3>
+        <p>Pigmentação tem custo de tinta e comissão diferente — na conta manual é onde mais rende discussão e prejuízo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. CONSEQUÊNCIAS ============ -->
+  <section class="slide" data-note="
+    <p>Leve-os a sentir a consequência no bolso e na relação. Consequence financeira é o que convence dono de barbearia.</p>
+    <p>Destaque: <b>furo de caixa</b> é o &ldquo;espírito&rdquo; que some todo mês — comissão superestimada, plástico não rastreado, tinta somada errada.</p>
+    <p class='tip'>Se alguém quiser contraponto (&ldquo;eu confio na minha equipe&rdquo;), responda: &ldquo;não é desconfiança da pessoa, é <b>custar zero</b> ter a prova. Motorista não discute com o GPS.&rdquo;</p>">
+    <div class="eyebrow">As consequências</div>
+    <h2 class="title">O custo invisível da conta no papel</h2>
+    <div class="grid g3">
+      <div class="card">
+        <span class="ic">🤝</span>
+        <h3>Desconfiança da equipe</h3>
+        <p>Barbeiro sai pensando que &ldquo;roubaram&rdquo; R$ 20 na comissão. A relação cai e bons profissionais pedem as contas.</p>
+      </div>
+      <div class="card">
+        <span class="ic">💰</span>
+        <h3>Furo de caixa</h3>
+        <p>Comissão a mais, tinta somada errada, cartão não rastreado. O prejuízo sai do bolso do dono, todo mês, sem ninguém ver.</p>
+      </div>
+      <div class="card">
+        <span class="ic">⏳</span>
+        <h3>Tempo do dono perdido</h3>
+        <p>Horas fechando conta em vez de receber cliente ou melhorar o negócio. Esse tempo é o mais caro que existe.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📈</span>
+        <h3>Dono não sabe o resultado</h3>
+        <p>Sem visão real de faturamento, lucro e despesa, o dono decide no &ldquo;achismo&rdquo; e nem percebe quando está no prejuízo.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🕵️</span>
+        <h3>Sem histórico confiável</h3>
+        <p>No fim do mês ninguém consegue responder &ldquo;quanto lucramos?&rdquo;. Tudo é dedo, foto de caderno e memória.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🧾</span>
+        <h3>Erro em cartão e Pix</h3>
+        <p>Cada forma de pagamento tem taxa e prazo diferentes. No papel, o que entra de plástico é um mistério até cair na conta.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. A SOLUÇÃO ============ -->
+  <section class="slide" data-note="
+    <p>Transição: <b>&ldquo;Agora imagina que cada atendimento já sai com a comissão calculada, sem conta nenhuma.&rdquo;</b></p>
+    <p>Explique o fluxo em 1 frase: &ldquo;quando o corte termina, você escolhe o barbeiro e o serviço, e o sistema já abre o quanto é do barbeiro e o quanto é da barbearia — na hora.&rdquo;</p>
+    <p class='tip'>Aqui vale a <b>demo ao vivo</b> (slide 12). Se estiver no computador, abra o sistema e registre um atendimento fictício.</p>">
+    <div class="eyebrow">A solução</div>
+    <h2 class="title">O sistema que <span class="hl-green">calcula na hora</span></h2>
+    <div class="split">
+      <div>
+        <ul class="clean">
+          <li><span class="tic">✓</span><span>Registra o atendimento em <strong>10 segundos</strong>: escolhe o barbeiro, o serviço e o pagamento.</span></li>
+          <li><span class="tic">✓</span><span>Calcula <strong>automaticamente</strong> a parte do barbeiro e a parte da barbearia.</span></li>
+          <li><span class="tic">✓</span><span>Mostra o resumo <strong>em tempo real</strong> antes de confirmar — sem surpresa.</span></li>
+          <li><span class="tic">✓</span><span>Respeita as regras do negócio: <strong>dono, colaborador, pigmentação e tinta</strong>.</span></li>
+          <li><span class="tic">✓</span><span>Guarda tudo e gera o <strong>relatório da semana prontinho</strong> para fechar.</span></li>
+        </ul>
+      </div>
+      <div class="card gold" style="display:flex;flex-direction:column;justify-content:center;">
+        <div style="font-size:15px;color:var(--text-muted);margin-bottom:14px;">Exemplo na tela do caixa:</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--border);">
+          <span style="color:var(--text-muted);">Corte + Barba</span><span>R$ 45,00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--border);">
+          <span style="color:var(--text-muted);"><i>ℹ Comissão do barbeiro</i></span><span class="big-number" style="font-size:24px;">40%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--border);">
+          <span style="color:var(--emerald);">Parte Barbeiro</span><span style="color:var(--emerald);font-weight:800;">R$ 18,00</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;">
+          <span style="color:var(--gold-light);">Parte Barbearia</span><span style="color:var(--gold-light);font-weight:800;">R$ 27,00</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 5. COMO CALCULA ============ -->
+  <section class="slide" data-note="
+    <p>Mostre que o sistema não é &ldquo;uma régua&rdquo;: ele <b>respeita as regras de cada barbearia</b>. Explique os 4 pilares devagar, um a um.</p>
+    <p><b>1. Colaborador:</b> recebe um percentual (por exemplo 40%) sobre o valor do serviço que ele fez.</p>
+    <p><b>2. Dono:</b> quando o dono atende, a comissão é 100% (ou seja, tudo vai para a casa), podendo somar ainda o valor da tinta.</p>
+    <p><b>3. Serviço específico:</b> pode fixar um percentual diferente para um serviço em especial (ex: barba 50% enquanto o geral é 40%).</p>
+    <p><b>4. Pigmentação:</b> só o dono executa, comissão 0% para colaborador e o custo da tinta volta para a barbearia.</p>
+    <p class='tip'>Esse é o slide que mais &ldquo;vende&rdquo;; é onde o dono se reconhece. Pergunte como cada um calcula hoje e encaixe na regra correspondente.</p>">
+    <div class="eyebrow">Como o sistema calcula</div>
+    <h2 class="title">Regras da sua barbearia, aplicadas <span class="hl-gold">sozinhas</span></h2>
+    <div class="grid g4">
+      <div class="card">
+        <span class="ic">✂️</span>
+        <h3>Colaborador</h3>
+        <p>Percentual definido por barbeiro. Ex: <span class="hl-green">40%</span> do valor que ele atendeu.</p>
+        <div class="small-note">comissão = valor × %</div>
+      </div>
+      <div class="card">
+        <span class="ic">👑</span>
+        <h3>Dono</h3>
+        <p>Quando o dono atende, <span class="hl-gold">100%</span> vai para a casa, podendo somar o valor da tinta.</p>
+        <div class="small-note">comissão = valor + tinta</div>
+      </div>
+      <div class="card">
+        <span class="ic">🔧</span>
+        <h3>Comissão por serviço</h3>
+        <p>Percentual específico por serviço, que sobrescreve o padrão do barbeiro.</p>
+        <div class="small-note">ex: barba 50%, corte 40%</div>
+      </div>
+      <div class="card">
+        <span class="ic">🎨</span>
+        <h3>Pigmentação</h3>
+        <p>Só o dono executa, comissão <span class="hl-rose">0%</span> para colaborador. A tinta volta para a barbearia.</p>
+        <div class="small-note">sem prejuízo de tinta</div>
+      </div>
+    </div>
+    <div class="formula">
+      <span class="dim">/ colaborador ·</span> valor_cobrado × percentual <span class="em">= comissão do barbeiro</span><br>
+      <span class="dim">/ dono ·</span> valor_cobrado + valor_da_tinta <span class="em">= tudo para a barbearia</span>
+    </div>
+  </section>
+
+  <!-- ============ 6. EXEMPLO PRÁTICO ============ -->
+  <section class="slide" data-note="
+    <p>Concrete o exemplo que acabou de mostrar abstrato. Use os números na tela.</p>
+    <p>Peça para eles somarem junto mentalmente. O efeito &ldquo;é isso que eu faço, mas eu calculo na mão&rdquo; é o que fecha a venda.</p>
+    <p><b>Cenário:</b> uma semana, 3 barbeiros e o dono. Mencione que todos os totais (atendimentos, faturado, comissão por barbeiro) saem prontos do relatório.</p>
+    <p class='tip'>Se quiser mais engajamento: &ldquo;alguém aqui calculou isso numa planilha essa semana?&rdquo; — se sim, o exemplo seria 15 minutos deles virando 2 segundos do sistema.</p>">
+    <div class="eyebrow">Exemplo prático</div>
+    <h2 class="title">Uma semana com o sistema</h2>
+    <div class="split" style="grid-template-columns:1fr 1fr;">
+      <div>
+        <div class="card green">
+          <span class="ic">✅</span>
+          <h3>Fechamento em segundos no relatório</h3>
+          <p>Verde = o que já saiu do caixa como comissão paga. Amarelo/dourado = o que ainda está pendente.</p>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <span class="ic">📋</span>
+          <h3>O que o dono confere na tela</h3>
+          <p>Atendimentos, total faturado, <b>comissão calculada</b> de cada um e quanto sobrou para a barbearia — no período que ele quiser (hoje, semana, mês).</p>
+        </div>
+      </div>
+      <div class="mock">
+        <div class="mock-head">
+          <span class="dot" style="background:#fb7185;"></span>
+          <span class="dot" style="background:#f5e7b2;"></span>
+          <span class="dot" style="background:#10b981;"></span>
+          <span class="url">Relatório · Comissões por barbeiro</span>
+        </div>
+        <div class="mock-body">
+          <table class="tbl">
+            <thead><tr><th>Barbeiro</th><th>Atend.</th><th>Faturado</th><th>Comissão</th><th>Para a casa</th></tr></thead>
+            <tbody>
+              <tr><td><b>Michael</b> <span class="tag gold">dono</span></td><td>40</td><td>R$ 1.800</td><td>—</td><td>R$ 1.800</td></tr>
+              <tr><td><b>Lucas</b> <span class="tag dim">40%</span></td><td>50</td><td>R$ 2.200</td><td style="color:var(--emerald);font-weight:700;">R$ 880</td><td>R$ 1.320</td></tr>
+              <tr><td><b>Jonas</b> <span class="tag dim">50%</span></td><td>38</td><td>R$ 1.600</td><td style="color:var(--emerald);font-weight:700;">R$ 800</td><td>R$ 800</td></tr>
+              <tr><td><b>Pablo</b> <span class="tag dim">40%</span></td><td>45</td><td>R$ 1.900</td><td style="color:var(--emerald);font-weight:700;">R$ 760</td><td>R$ 1.140</td></tr>
+              <tr style="border-top:1px solid var(--border-gold);">
+                <td><b>Total</b></td><td><b>173</b></td><td><b>R$ 7.500</b></td>
+                <td style="color:var(--emerald);font-weight:800;">R$ 2.440</td>
+                <td style="color:var(--gold-light);font-weight:800;">R$ 5.060</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 7. MÓDULO DE COMISSÕES ============ -->
+  <section class="slide" data-note="
+    <p>Apresente o módulo como &ldquo;o fim da discussão&rdquo;: tudo que envolve comissão em um só lugar.</p>
+    <p>Liste o que aparece: comissão calculada por barbeiro, quanto já foi pago e quanto ainda está pendente, e o registro do pagamento (com data e sem ultrapassar o valor devido).</p>
+    <p>Ressalte a <b>proteção:</b> essa área fica trancada com senha do dono. O barbeiro vê o caixa e o histórico do dia, mas <b>não vê</b> os relatórios financeiros.</p>
+    <p class='tip'>Guião curto: &ldquo;o barbeiro vê o que é dele no dia; só o dono abre o fechamento com senha.&rdquo; Isso também evita comparação de comissão entre a equipe.</p>">
+    <div class="eyebrow">Módulo de comissões</div>
+    <h2 class="title">Do cálculo ao pagamento, <span class="hl-gold">sem discussão</span></h2>
+    <div class="grid g3">
+      <div class="card gold">
+        <span class="ic">🧾</span>
+        <h3>Calculado por barbeiro</h3>
+        <p>Relatório com atendimentos, faturado, tinta e comissão de cada profissional, por período.</p>
+      </div>
+      <div class="card gold">
+        <span class="ic">🔒</span>
+        <h3>Área do Dono com senha</h3>
+        <p>Relatórios e fechamento só abrem com senha. O menu esconde essas telas dos barbeiros.</p>
+      </div>
+      <div class="card gold">
+        <span class="ic">💵</span>
+        <h3>Pagamento registrado</h3>
+        <p>Na hora de pagar, o sistema registra a saída no caixa e marca a comissão como paga — sem branco de quanto já repassou.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🏷️</span>
+        <h3>Pago vs. pendente</h3>
+        <p>Cada barbeiro mostra o saldo pendente. Ninguém precisa confiar em memória.</p>
+      </div>
+      <div class="card">
+        <span class="ic">⚠️</span>
+        <h3>Proteção contra erro</h3>
+        <p>O sistema bloqueia pagamento maior que o devido e impede apagar venda que já teve comissão paga.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🧮</span>
+        <h3>Conta aberta, transparente</h3>
+        <p>O valor é arredondado aos centavos certos e o total bate com o caixa. Transparência vira confiança na equipe.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 8. FINANCEIRO COMPLETO ============ -->
+  <section class="slide" data-note="
+    <p>Este é o slide do &ldquo;dono que pensa no negócio&rdquo;. Mostre que não é só comissão — é a <b>gestão financeira inteira</b>.</p>
+    <p>Principais peças: <b>Posição do caixa</b> (saldo + comissões pendentes + contas a pagar), <b>extrato</b> (toda entrada e saída, com opção de desfazer erro), <b>contas/gastos</b> com situação pago/pendente.</p>
+    <p>Ressalte <b>cartões a receber</b>: informa a taxa da operadora e acompanha quando o dinheiro do plástico entra — erro clássico do caixa manual.</p>
+    <p>E o <b>resultado do dono</b>: faturamento − comissões − despesas − taxas = <b>lucro do período</b>, com comparativo entre períodos.</p>
+    <p class='tip'>Fale do jeito de dono: &ldquo;saber onde está perdendo dinheiro&rdquo; e &ldquo;saber o que te sobra no fim do mês&rdquo;.</p>">
+    <div class="eyebrow">Financeiro completo</div>
+    <h2 class="title">O dono passa a <span class="hl-green">enxergar o negócio</span></h2>
+    <div class="grid g4">
+      <div class="card">
+        <span class="ic">🏦</span>
+        <h3>Posição do caixa</h3>
+        <p>Saldo atual, comissões pendentes, contas a pagar e saldo livre — sempre atualizado.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📜</span>
+        <h3>Extrato completo</h3>
+        <p>Cada entrada e saída. Lançou errado? <b>Desfaz</b> e corrige no histórico.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🧾</span>
+        <h3>Contas e despesas</h3>
+        <p>Tinta, giletes, aluguel, energia… com situação pago / a pagar e vencimento.</p>
+      </div>
+      <div class="card">
+        <span class="ic">💳</span>
+        <h3>Cartões a receber</h3>
+        <p>Informa a taxa da operadora e acompanha quando o plástico cai na conta.</p>
+      </div>
+    </div>
+    <div class="mock">
+      <div class="mock-head">
+        <span class="dot" style="background:#fb7185;"></span>
+        <span class="dot" style="background:#f5e7b2;"></span>
+        <span class="dot" style="background:#10b981;"></span>
+        <span class="url">Financeiro · Resultado do período</span>
+      </div>
+      <div class="mock-body">
+        <div class="grid g4" style="margin-top:0;">
+          <div class="pillar"><div class="num">R$ 7.500</div><p>Faturamento</p></div>
+          <div class="pillar"><div class="num" style="color:var(--emerald);">R$ 2.440</div><p>Comissões</p></div>
+          <div class="pillar"><div class="num" style="color:var(--text-muted);">R$ 1.120</div><p>Despesas + taxas</p></div>
+          <div class="pillar"><div class="num">R$ 3.940</div><p><b>Lucro da barbearia</b></p></div>
+        </div>
+        <div class="small-note" style="margin-top:14px;">Comparativo com o período anterior e composição por forma de pagamento (dinheiro, cartão, Pix) disponíveis no relatório.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 9. VANTAGENS ============ -->
+  <section class="slide" data-note="
+    <p>Venda o que diferencia: <b>não é mais um sistema de mensalidade para depender de internet</b>.</p>
+    <p>Fale ganchos: &ldquo;não precisa de Wi-Fi&rdquo;, &ldquo;roda do pen drive em qualquer PC Windows&rdquo;, &ldquo;não paga mensalidade&rdquo;, &ldquo;instala em minutos&rdquo;.</p>
+    <p>Segurança: backups automáticos a cada 5 min, cópia diária e mensal, opção de backup externo (outro HD/pen drive) e senha protegida por hash (nada de senha em texto claro).</p>
+    <p class='tip'>Para quem reclama de &ldquo;mas sistema online é melhor&rdquo;, responda: &ldquo;a internet caiu aqui na rua, o seu caixa parou? O nosso não para.&rdquo;</p>">
+    <div class="eyebrow">Vantagens do produto</div>
+    <h2 class="title">Feito para a realidade da barbearia</h2>
+    <div class="grid g3">
+      <div class="card green">
+        <span class="ic">🔌</span>
+        <h3>100% offline</h3>
+        <p>Sem depender de internet. Queda de Wi-Fi não para o caixa.</p>
+      </div>
+      <div class="card green">
+        <span class="ic">💾</span>
+        <h3>Roda do pen drive</h3>
+        <p>Sem instalar nada: pluga, dá duplo clique, abre no navegador. Funciona em qualquer PC Windows.</p>
+      </div>
+      <div class="card green">
+        <span class="ic">💵</span>
+        <h3>Sem mensalidade</h3>
+        <p>Sem assinatura, sem taxa por mês. Você é dono da sua ferramenta.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🛡️</span>
+        <h3>Backup automático</h3>
+        <p>Cópia a cada 5 minutos, diária e mensal. Opção de backup em outro dispositivo.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🔑</span>
+        <h3>Senha do dono protegida</h3>
+        <p>Relatórios trancados com senha com hash (SHA-256 + salt). Sessão encerra ao fechar.</p>
+      </div>
+      <div class="card">
+        <span class="ic">⚙️</span>
+        <h3>Simples ao extremo</h3>
+        <p>Tela única de caixa, botões grandes, nenhum treinamento. Barbeiro usa no primeiro dia.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 10. PÚBLICO-ALVO ============ -->
+  <section class="slide" data-note="
+    <p>Deixe claro <b>para quem é</b> — e também para quem não é, para não perder credibilidade.</p>
+    <p><b>É para:</b> barbearia com 1 dono + equipe de barbeiros que recebem percentual; quem ainda fecha no caderno/planilha; quem quer evolução sem mensalidade e sem sistema online.</p>
+    <p><b>Não é (ainda):</b> redes com múltiplas lojas e gerenciamento centralizado em nuvem, ou quem precisa de PDV integrado com maquininha automatizada.</p>
+    <p class='tip'>Se alguém perguntar de loja única com um só barbeiro: mesmo assim vale — o dono ganha visão financeira e relatório. Mas o foco da proposta é equipe.</p>">
+    <div class="eyebrow">Público-alvo e aplicação</div>
+    <h2 class="title">Para quem este sistema foi feito</h2>
+    <div class="split" style="grid-template-columns:1fr 1fr;">
+      <div>
+        <div class="card green">
+          <span class="ic">✅</span>
+          <h3>Ideal para barbearias que…</h3>
+          <ul class="clean" style="margin-top:6px;">
+            <li><span class="tic">•</span><span>têm <strong>equipe de barbeiros</strong> que ganham por percentual;</span></li>
+            <li><span class="tic">•</span><span>fecham comissão em <strong>papel, calculadora ou planilha</strong>;</span></li>
+            <li><span class="tic">•</span><span>sofrem com <strong>divergência no repasse</strong> e furo de caixa;</span></li>
+            <li><span class="tic">•</span><span>não querem depender de <strong>internet e mensalidade</strong>;</span></li>
+            <li><span class="tic">•</span><span>querem saber de verdade <strong>quanto a barbearia lucra</strong>.</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <span class="ic">🛠️</span>
+        <h3>Adaptação em minutos</h3>
+        <p>Cada barbearia configura do seu jeito, sem programação:</p>
+        <ul class="clean" style="margin-top:6px;">
+          <li><span class="tic">→</span><span>cadastra os <strong>barbeiros e o % de cada um</strong>;</span></li>
+          <li><span class="tic">→</span><span>cadastra os <strong>serviços</strong> com preço e comissão própria (opcional);</span></li>
+          <li><span class="tic">→</span><span>marca <strong>serviços exclusivos do dono</strong> (ex: pigmentação);</span></li>
+          <li><span class="tic">→</span><span>define a <strong>senha do dono</strong> no primeiro acesso.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 11. COMO FUNCIONA NA PRÁTICA ============ -->
+  <section class="slide" data-note="
+    <p>Dê o &ldquo;clique&rdquo; de como é o uso do dia a dia: rápido e por abas.</p>
+    <p>Abas: <b>Caixa & Atendimento</b> (registro + comissão na hora), <b>Histórico</b> (do dia, para o barbeiro), <b>Barbeiros</b> e <b>Serviços</b> (configuração), e a <b>Área do Dono</b> (relatórios financeiros, histórico completo, gastos, financeiro, backups).</p>
+    <p>A régua do dia: ao final do expediente o dono consulta o relatório do período, compara com o caixa físico, e paga as comissões com registro — tudo no mesmo sistema.</p>
+    <p class='tip'>Mostre o fluxo como &ldquo;começo do dia, meio do dia, fim do dia&rdquo;. É o roteiro mental mais fácil para o dono se visualizar.</p>">
+    <div class="eyebrow">Na prática</div>
+    <h2 class="title">O dia a dia com o sistema</h2>
+    <div class="grid g3">
+      <div class="card">
+        <span class="ic">🌅</span>
+        <h3>Começo do dia</h3>
+        <p>Abre pen drive → sistema online em segundos. Configuração já está pronta da primeira vez.</p>
+      </div>
+      <div class="card">
+        <span class="ic">☀️</span>
+        <h3>Durante o dia (Caixa)</h3>
+        <p>Cada atendimento: escolhe barbeiro, serviço, pagamento. Comissão calculada na hora, resumo na tela.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🌙</span>
+        <h3>Fim do dia (Área do Dono)</h3>
+        <p>Relatório do período: faturado, comissões, lucro. Confere o caixa, paga as comissões registrando a saída.</p>
+      </div>
+    </div>
+    <div class="stamps">
+      <span class="stamp">🖥️ Aba Caixa &amp; Atendimento</span>
+      <span class="stamp">📜 Aba Histórico</span>
+      <span class="stamp">👥 Aba Barbeiros</span>
+      <span class="stamp">✂️ Aba Serviços</span>
+      <span class="stamp green">👑 Área do Dono (com senha)</span>
+    </div>
+  </section>
+
+  <!-- ============ 12. DEMO GUIADA ============ -->
+  <section class="slide" data-note="
+    <p><b>Roteiro de demonstração ao vivo</b> (se houver computador e pen drive):</p>
+    <p><b>1.</b> Abrir o sistema (duplo clique no <code>iniciar_sistema.bat</code>).</p>
+    <p><b>2.</b> Aba Barbeiros: cadastrar um barbeiro com 40% de comissão (já criado de exemplo).</p>
+    <p><b>3.</b> Aba Serviços: mostrar que dá para marcar &ldquo;apenas dono&rdquo; e &ldquo;comissão própria&rdquo;.</p>
+    <p><b>4.</b> Aba Caixa: registrar um atendimento fictício (ex: corte R$ 30) e mostrar o resumo: parte barbeiro / parte barbearia calculadas na hora.</p>
+    <p><b>5.</b> Área do Dono: definir senha no primeiro acesso, abrir Relatórios e mostrar comissões por barbeiro e o resumo financeiro.</p>
+    <p><b>6.</b> Aba Gastos/Financeiro: lançar uma despesa e ver o saldo/estrato refletir.</p>
+    <p class='tip'>O vídeo certamente vale mais que mil palavras: repita o passo 4 duas vezes com percentuais diferentes para mostrar a &ldquo;mágica&rdquo; do cálculo.</p>">
+    <div class="eyebrow">Demonstração</div>
+    <h2 class="title">Roteiro de <span class="hl-gold">demonstração ao vivo</span></h2>
+    <ul class="clean">
+      <li><span class="tic">1</span><span><strong>Abra o sistema</strong> — duplo clique em <code style="color:var(--gold-light);">iniciar_sistema.bat</code> no pen drive. Abre sozinho no navegador.</span></li>
+      <li><span class="tic">2</span><span><strong>Barbeiros</strong> — mostre um profissional cadastrado com percentual de comissão.</span></li>
+      <li><span class="tic">3</span><span><strong>Serviços</strong> — mostre &ldquo;apenas para o dono&rdquo; e &ldquo;comissão própria do serviço&rdquo;.</span></li>
+      <li><span class="tic">4</span><span><strong>Caixa</strong> — lance um corte de R$ 30 e aponte na tela: <span class="hl-green">parte barbeiro</span> e <span class="hl-gold">parte barbearia</span> na hora.</span></li>
+      <li><span class="tic">5</span><span><strong>Área do Dono</strong> — senha no primeiro acesso; abra Relatórios e mostre <strong>comissões por barbeiro</strong> e o <strong>resultado do período</strong>.</span></li>
+      <li><span class="tic">6</span><span><strong>Financeiro</strong> — lance uma despesa e veja o saldo / extrato reagirem.</span></li>
+    </ul>
+    <div class="small-note" style="margin-top:16px;padding:14px 18px;border:1px dashed var(--border);border-radius:12px;">
+      💡 Dica: se não puder demonstrar ao vivo, mostre este mesmo roteiro em prints da tela — o fluxo é curto e intuitivo.
+    </div>
+  </section>
+
+  <!-- ============ 13. FECHAMENTO ============ -->
+  <section class="slide" data-note="
+    <p><b>Encerre com a proposta de valor e a chamada para ação.</b></p>
+    <p>Resumo em 3 frases: &ldquo;comissão automática e sem discussão; o dono enxerga o dinheiro; tudo offline e sem mensalidade.&rdquo;</p>
+    <p>Próximo passo: agendem um teste com os dados reais de uma semana para verem o relatório fechado em segundos.</p>
+    <p class='tip'>Fecha com pergunta de venda: &ldquo;vocês querem ver o fechamento da semana de vocês sair pronto em 2 segundos?&rdquo;</p>">
+    <div class="cover" style="align-items:center;text-align:center;">
+      <div class="logo">💈</div>
+      <div class="eyebrow" style="justify-content:center;">Fechamento</div>
+      <h2 class="title">Comissão que <span class="hl-gold">não dá discussão</span><br>e negócio que o dono <span class="hl-green">enxerga</span></h2>
+      <div class="stamps" style="justify-content:center;margin-top:26px;">
+        <span class="stamp">Cálculo automático</span>
+        <span class="stamp">Relatório por barbeiro</span>
+        <span class="stamp">Financeiro completo</span>
+        <span class="stamp green">100% offline · sem mensalidade</span>
+      </div>
+      <div class="subtitle" style="margin:26px auto 0;text-align:center;">
+        O próximo passo é um <b>teste com os dados da sua semana</b>: o sistema fecha as comissões em segundos.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Controles -->
+<div class="progress" id="progress"></div>
+<div class="slide-counter" id="counter"></div>
+<button class="notes-btn" id="notesToggle" title="Ativar/desativar roteiro do apresentador (tecla N)">
+  <span id="notesDot">📋</span> Roteiro do apresentador
+</button>
+<div class="notes-panel" id="notesPanel" aria-live="polite">
+  <h4>Roteiro do apresentador</h4>
+  <div id="notesContent"></div>
+</div>
+<div class="controls">
+  <button id="prevBtn" title="Anterior (←)" aria-label="Slide anterior">‹</button>
+  <button id="nextBtn" title="Próximo (→)" aria-label="Próximo slide">›</button>
+</div>
+
+<script>
+(function () {
+  const deck = document.getElementById('deck');
+  const slides = Array.from(deck.querySelectorAll('.slide'));
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const notesPanel = document.getElementById('notesPanel');
+  const notesContent = document.getElementById('notesContent');
+  const notesToggle = document.getElementById('notesToggle');
+  const notesDot = document.getElementById('notesDot');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  let current = 0;
+  let notesOn = false;
+
+  function show(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === current));
+    progress.style.width = ((current + 1) / slides.length * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === slides.length - 1;
+    renderNotes();
+  }
+
+  function renderNotes() {
+    const note = slides[current].dataset.note || '';
+    notesContent.innerHTML = note;
+    if (window.MathJax) {} // inert
+  }
+
+  function toggleNotes(force) {
+    notesOn = force !== undefined ? force : !notesOn;
+    notesPanel.classList.toggle('show', notesOn);
+    notesToggle.classList.toggle('on', notesOn);
+    notesDot.textContent = notesOn ? '🔒' : '📋';
+  }
+
+  prevBtn.addEventListener('click', function () { show(current - 1); });
+  nextBtn.addEventListener('click', function () { show(current + 1); });
+  notesToggle.addEventListener('click', function (e) { e.stopPropagation(); toggleNotes(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(current - 1); }
+    else if (e.key.toLowerCase() === 'n') { toggleNotes(); }
+    else if (e.key === 'Home') { show(0); }
+    else if (e.key === 'End') { show(slides.length - 1); }
+  });
+
+  // Click zones: right 35% next, left 20% prev (center keeps notes button usable)
+  document.addEventListener('click', function (e) {
+    if (notesPanel.classList.contains('show') || notesToggle.contains(e.target)) return;
+    if (e.target.closest('.controls')) return;
+    const x = e.clientX / window.innerWidth;
+    if (x > 0.65) show(current + 1);
+    else if (x < 0.35) show(current - 1);
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>

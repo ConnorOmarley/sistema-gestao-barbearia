@@ -1,3 +1,10 @@
+/*
+ * Sistema de Gestão para Barbearia
+ * Autor: Carlos Alberto
+ * Contato: alberttcarlosu.u@gmail.com
+ * Licença: MIT
+ * Criado em: 2026
+ */
 export function invalid(message, status = 400) {
   const error = new Error(message);
   error.status = status;

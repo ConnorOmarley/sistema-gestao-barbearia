@@ -1,3 +1,10 @@
+/*
+ * Sistema de Gestão para Barbearia
+ * Autor: Carlos Alberto
+ * Contato: alberttcarlosu.u@gmail.com
+ * Licença: MIT
+ * Criado em: 2026
+ */
 import { existsSync, writeFileSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
 export function registerPhotoRoutes(app, getOne, change, perfilDir) {
