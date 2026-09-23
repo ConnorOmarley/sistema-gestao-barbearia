@@ -1,0 +1,13 @@
+LEIA PRIMEIRO - ATUALIZACAO DO SISTEMA
+========================================
+
+1. Feche o sistema da barbearia (a janela do site e o servidor), se estiver aberto.
+2. Extraia TODOS os arquivos deste ZIP para uma pasta, preservando as pastas internas.
+3. Execute o arquivo ATUALIZAR_SISTEMA.bat (duplo clique).
+4. Escolha a pasta onde fica o iniciar_sistema.bat que voce ja usa.
+5. Aguarde a conclusao e abra o sistema. No navegador, pressione Ctrl+F5 para atualizar a tela.
+
+IMPORTANTE:
+- O atualizador NAO altera seus dados, senha, fotos nem backups financeiros.
+- Antes de substituir, ele guarda copia dos arquivos atuais e do banco em suporte/backups.
+- Se algo falhar no meio, mantenha o sistema fechado e execute RECUPERAR_ATUALIZACAO.bat.
