@@ -3337,6 +3337,9 @@
         }
 
         // Histórico de Atendimentos (sempre do dia de hoje, no horário local)
+        const TAM_PAGINA_DIARIA = 10;
+        let historicoDiaTodos = [];
+        let historicoDiaPagina = 1;
         async function loadHistorico() {
             const hoje = new Date();
             const dataInicio = utcInicioDiaLocal(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
@@ -3345,10 +3348,88 @@
             try {
                 const res = await fetch(`${API_URL}/atendimentos?data_inicio=${dataInicio}&data_fim=${dataFim}`);
                 const atendimentos = await res.json();
-                renderLinhasHistorico(atendimentos, document.querySelector('#table-historico tbody'), 'Nenhum atendimento registrado hoje.');
+                historicoDiaTodos = atendimentos;
+                historicoDiaPagina = 1;
+                renderPaginaHistoricoDia();
             } catch (err) {
                 console.error('Erro ao carregar histórico:', err);
             }
+        }
+        function renderPaginacaoNumerada({ id, anchor, pagina, paginas, total, rotuloTotal, aoIrPara }) {
+            if (!anchor) return;
+            let nav = document.getElementById(id);
+            if (!nav) {
+                nav = document.createElement('nav');
+                nav.id = id;
+                nav.className = 'historico-pagination';
+                nav.setAttribute('aria-label', 'Páginas');
+                anchor.after(nav);
+            } else {
+                nav.replaceChildren();
+            }
+            const go = p => { if (Number.isInteger(p) && p >= 1 && p <= paginas && p !== pagina) aoIrPara(p); };
+            const botao = (texto, desabilitado, acao) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn-outline btn-small';
+                b.textContent = texto;
+                b.disabled = !!desabilitado;
+                b.onclick = acao;
+                nav.append(b);
+            };
+            const numero = p => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'btn btn-outline btn-small page-num' + (p === pagina ? ' current' : '');
+                b.textContent = String(p);
+                b.onclick = () => go(p);
+                nav.append(b);
+            };
+            botao('Anterior', pagina <= 1, () => go(pagina - 1));
+            const conjunto = new Set([1, paginas, pagina - 1, pagina, pagina + 1]);
+            const lista = [...conjunto].filter(p => p >= 1 && p <= paginas).sort((a, b) => a - b);
+            let anterior = 0;
+            for (const p of lista) {
+                if (p - anterior > 1) nav.append(Object.assign(document.createElement('span'), { textContent: '…', className: 'page-ellipsis' }));
+                numero(p);
+                anterior = p;
+            }
+            botao('Próxima', pagina >= paginas, () => go(pagina + 1));
+            const info = document.createElement('span');
+            info.textContent = 'Página ' + pagina + ' de ' + paginas + ' · ' + total + ' ' + rotuloTotal;
+            nav.append(info);
+            const pulo = document.createElement('input');
+            pulo.type = 'number';
+            pulo.min = 1;
+            pulo.max = paginas;
+            pulo.value = pagina;
+            pulo.className = 'page-jump';
+            pulo.setAttribute('aria-label', 'Ir para página');
+            const confirmar = () => go(parseInt(pulo.value, 10));
+            pulo.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); confirmar(); } };
+            const ir = document.createElement('button');
+            ir.type = 'button';
+            ir.className = 'btn btn-outline btn-small';
+            ir.textContent = 'Ir';
+            ir.onclick = confirmar;
+            nav.append(pulo, ir);
+        }
+        function renderPaginaHistoricoDia() {
+            const tbody = document.querySelector('#table-historico tbody');
+            const totalPaginas = Math.max(1, Math.ceil(historicoDiaTodos.length / TAM_PAGINA_DIARIA));
+            if (historicoDiaPagina > totalPaginas) historicoDiaPagina = totalPaginas;
+            if (!historicoDiaTodos.length) historicoDiaPagina = 1;
+            const inicio = (historicoDiaPagina - 1) * TAM_PAGINA_DIARIA;
+            renderLinhasHistorico(historicoDiaTodos.slice(inicio, inicio + TAM_PAGINA_DIARIA), tbody, 'Nenhum atendimento registrado hoje.');
+            renderPaginacaoNumerada({
+                id: 'historico-diario-paginas',
+                anchor: document.querySelector('#historico .table-responsive'),
+                pagina: historicoDiaPagina,
+                paginas: totalPaginas,
+                total: historicoDiaTodos.length,
+                rotuloTotal: historicoDiaTodos.length === 1 ? 'registro' : 'registros',
+                aoIrPara: p => { historicoDiaPagina = p; renderPaginaHistoricoDia(); }
+            });
         }
 
         let histDonoPeriodo = '';
@@ -3406,17 +3487,17 @@
                 const paginaDados = await res.json();
                 const atendimentos = paginaDados.itens;
                 if (requestAtual !== histDonoRequest || tokenSolicitado !== relatorioToken()) return;
-                renderLinhasHistorico(atendimentos, tbody, 'Nenhum atendimento registrado no período.');
+renderLinhasHistorico(atendimentos, tbody, 'Nenhum atendimento registrado no período.');
                 atualizarStatusHistoricoDono(paginaDados.total+' atendimentos no período • Total recebido: '+moedaUI(paginaDados.valor),'success');
-                let nav=document.getElementById('historico-paginas');
-                if(!nav){nav=document.createElement('div');nav.id='historico-paginas';nav.className='historico-pagination';tbody.closest('.table-responsive').after(nav);}
-                nav.replaceChildren();
-                const anterior=document.createElement('button'),proxima=document.createElement('button'),info=document.createElement('span');
-                anterior.textContent='Anterior';proxima.textContent='Próxima';info.textContent='Página '+paginaDados.pagina+' de '+paginaDados.paginas;
-                for(const b of [anterior,proxima]){b.type='button';b.className='btn btn-outline btn-small';}
-                anterior.disabled=paginaDados.pagina<=1;proxima.disabled=paginaDados.pagina>=paginaDados.paginas;
-                anterior.onclick=()=>loadHistoricoDono(paginaDados.pagina-1);proxima.onclick=()=>loadHistoricoDono(paginaDados.pagina+1);
-                nav.append(anterior,info,proxima);
+                renderPaginacaoNumerada({
+                    id: 'historico-paginas',
+                    anchor: tbody.closest('.table-responsive'),
+                    pagina: paginaDados.pagina,
+                    paginas: paginaDados.paginas,
+                    total: paginaDados.total,
+                    rotuloTotal: 'atendimentos',
+                    aoIrPara: p => loadHistoricoDono(p)
+                });
             } catch (err) {
                 if (requestAtual !== histDonoRequest) return;
                 if (tbody) tbody.innerHTML = htmlVazio(9, 'fa-triangle-exclamation', 'Não foi possível carregar o histórico.');

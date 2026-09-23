@@ -1,16 +1,16 @@
 function renderPagination(id,anchor,data,load) {
-  document.getElementById(id)?.remove();
-  const nav=document.createElement('nav');nav.id=id;nav.className='historico-pagination';nav.setAttribute('aria-label','Páginas');
-  const label=document.createElement('span');label.textContent='Página '+data.pagina+' de '+data.paginas+' · '+data.total+' registros';
-  const previous=document.createElement('button'),next=document.createElement('button');
-  previous.textContent='Anterior';next.textContent='Próxima';previous.disabled=data.pagina<=1;next.disabled=data.pagina>=data.paginas;
-  for(const b of [previous,next]){b.type='button';b.className='btn btn-outline btn-small';}
-  const go=page=>{previous.disabled=true;next.disabled=true;load(page);};
-  previous.onclick=()=>go(data.pagina-1);next.onclick=()=>go(data.pagina+1);
-  nav.append(previous,label,next);anchor.after(nav);
+  renderPaginacaoNumerada({
+    id,
+    anchor,
+    pagina: data.pagina,
+    paginas: data.paginas,
+    total: data.total,
+    rotuloTotal: data.total === 1 ? 'registro' : 'registros',
+    aoIrPara: load
+  });
 }
 (function(){
-  const style=document.createElement('style');style.textContent='.historico-pagination{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:18px 0}.backup-status{white-space:pre-line;overflow-wrap:anywhere}.backup-list{max-height:280px;overflow:auto}.backup-list button{display:block;margin:8px 0}';document.head.append(style);
+  const style=document.createElement('style');style.textContent='.historico-pagination{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin:18px 0}.historico-pagination .page-num{min-width:34px}.historico-pagination .page-num.current{background:var(--gold-primary);border-color:var(--gold-primary);color:#0d1017;font-weight:700}.historico-pagination .page-ellipsis{color:var(--text-muted);padding:2px 0}.historico-pagination .page-jump{width:64px;padding:6px 8px;border:1px solid var(--border-subtle);border-radius:8px;background:var(--bg-card);color:var(--text);font:inherit}.backup-status{white-space:pre-line;overflow-wrap:anywhere}.backup-list{max-height:280px;overflow:auto}.backup-list button{display:block;margin:8px 0}';document.head.append(style);
   document.querySelector('.rel-subtabs').insertAdjacentHTML('beforeend','<button type="button" class="rel-subtab" data-subtab="backups" id="abrir-backups"><i class="fas fa-shield-halved"></i> Backups</button>');
   document.getElementById('relatorio').insertAdjacentHTML('beforeend',`<div class="rel-subaba" id="rel-sub-backups" data-tab="backups" style="display:none"><section class="custom-card">
     <h3>Cópias de segurança</h3><p class="owner-note">Mantemos 20 cópias recentes, 30 diárias e 12 mensais. As cópias diárias e mensais são atualizadas durante o uso. Os backups incluem registros e configurações; fotos devem ser copiadas junto com a pasta do sistema.</p>
