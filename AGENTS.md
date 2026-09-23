@@ -41,3 +41,14 @@ Três lugares distintos, não misturar:
    - `ENTREGA/` está no `.gitignore`; o pacote gerado e o ZIP **não vão para o git** (a fonte do que vai neles é o git; a entrega em si é fora).
 
 Ao finalizar uma alteração: commit do código (git) + pacote novo em `ENTREGA/atualizacao-assistida/<data>` (fora do git) + avisar que a pasta está pronta para compactar em `ATUALIZACAO_ASSISTIDA.zip`.
+
+## Múltiplos clientes
+
+Regra de ouro: **base única, branch por cliente, config para o resto, entrega isolada**.
+
+- **`main` = produto-base genérico.** Correções, relatórios e melhorias que servem a todos entram uma vez só em `main`.
+- **Customização leve** (logo, nome da loja, cores, recursos liga/desliga) deve ser feita por configuração (`cliente.config.json`), não por branch/tela.
+- **Alteração exclusiva de um cliente** vai na branch `cliente/<nome>` (ex.: `cliente/joao`). Regra de trânsito: **sempre `main → cliente`, nunca `cliente → main`** — o produto base nunca se contamina. Um cliente não recebe mudança do outro.
+- **Pacote de atualização de cada cliente** é gerado com a branch do próprio cliente no check-out (`node scripts/empacotar-suporte.cjs`); nunca gerar o pacote de um cliente a partir da branch de outro.
+- **Entrega por cliente em `ENTREGA/<cliente>/`** — fora do git, como hoje. Banco/backups de cada cliente nunca vão ao git.
+- Sempre que mudar código que afeta o produto-base, além dos testes, conferir que as branches de clientes continuam recebendo via `merge main → cliente/<nome>`.
